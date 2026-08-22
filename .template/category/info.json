@@ -1,0 +1,6 @@
+{
+  "id": "{{CATEGORY_ID}}",
+  "title": "{{CATEGORY_TITLE}}",
+  "description": "{{CATEGORY_DESCRIPTION}}",
+  "items": []
+}

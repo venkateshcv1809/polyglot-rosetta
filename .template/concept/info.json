@@ -1,8 +1,6 @@
 {
   "id": "{{CONCEPT_ID}}",
   "title": "{{CONCEPT_TITLE}}",
-  "category": "{{CATEGORY}}",
   "difficulty": "Easy",
-  "order": {{ORDER}},
   "description": "Implementation of {{CONCEPT_TITLE}} across multiple languages."
 }
