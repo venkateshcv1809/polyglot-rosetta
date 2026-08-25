@@ -49,3 +49,21 @@ func (l Language) FileExtension() string {
 		return ""
 	}
 }
+
+// TemplateRelPath returns the relative template path (e.g. "go/template.go").
+func (l Language) TemplateRelPath() string {
+	ext := l.FileExtension()
+	if ext == "" {
+		return ""
+	}
+	return fmt.Sprintf("%s/template.%s", l, ext)
+}
+
+// TargetRelPath returns the relative target output path (e.g. "go/main.go").
+func (l Language) TargetRelPath() string {
+	ext := l.FileExtension()
+	if ext == "" {
+		return ""
+	}
+	return fmt.Sprintf("%s/main.%s", l, ext)
+}

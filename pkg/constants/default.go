@@ -17,3 +17,11 @@ const (
 const (
 	ConceptDifficulty = "Easy"
 )
+
+// Standard Template Placeholders
+const (
+	TmplID          = "{{ID}}"
+	TmplTitle       = "{{TITLE}}"
+	TmplDescription = "{{DESCRIPTION}}"
+	TmplDifficulty  = "{{DIFFICULTY}}"
+)
