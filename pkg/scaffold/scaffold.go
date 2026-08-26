@@ -47,7 +47,7 @@ func (s *Scaffolder) ensureRootInfoExists() error {
 		return nil
 	}
 
-	rootTmplPath := filepath.Join(s.TemplateDir, "root", "info.json")
+	rootTmplPath := filepath.Join(s.TemplateDir, "category", "info.json")
 	if !fileExists(rootTmplPath) {
 		return fmt.Errorf("required root template file missing at: %s", rootTmplPath)
 	}
