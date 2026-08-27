@@ -1,6 +1,6 @@
 {
-  "id": "{{CONCEPT_ID}}",
-  "title": "{{CONCEPT_TITLE}}",
-  "difficulty": "Easy",
-  "description": "Implementation of {{CONCEPT_TITLE}} across multiple languages."
+  "id": "{{ID}}",
+  "title": "{{TITLE}}",
+  "difficulty": "{{DIFFICULTY}}",
+  "description": "{{DESCRIPTION}}"
 }
