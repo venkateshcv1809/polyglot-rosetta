@@ -1,0 +1,6 @@
+{
+  "id": "root",
+  "title": "Polyglot Rosetta",
+  "description": "A cross-language benchmark and implementation index for core computer science concepts. This repository tracks solutions, memory models, and execution patterns across Python, TypeScript, Go, Rust, and Zig building mastery through side-by-side comparative practice.",
+  "items": []
+}
