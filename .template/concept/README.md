@@ -1,6 +1,6 @@
-# {{CONCEPT_TITLE}}
+# {{TITLE}}
 
-Implementation of {{CONCEPT_TITLE}} across multiple languages.
+{{DESCRIPTION}}
 
 ## Concept & Strategy
 

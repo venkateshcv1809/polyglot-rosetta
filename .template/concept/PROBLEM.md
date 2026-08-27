@@ -1,4 +1,4 @@
-# {{CONCEPT_TITLE}}
+# {{TITLE}}
 
 ## Problem Statement
 Describe the problem here.
