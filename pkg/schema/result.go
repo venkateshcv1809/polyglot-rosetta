@@ -3,12 +3,12 @@ package schema
 import "time"
 
 type TestCaseResult struct {
-	ID        int           `json:"id"`
-	Passed    bool          `json:"passed"`
-	Duration  time.Duration `json:"duration_ns"`
-	Actual    string        `json:"actual,omitempty"`
-	Expected  string        `json:"expected,omitempty"`
-	Error     string        `json:"error,omitempty"`
+	ID       int           `json:"id"`
+	Passed   bool          `json:"passed"`
+	Duration time.Duration `json:"duration_ns"`
+	Actual   string        `json:"actual,omitempty"`
+	Expected string        `json:"expected,omitempty"`
+	Error    string        `json:"error,omitempty"`
 }
 
 type LanguageResult struct {
@@ -19,7 +19,7 @@ type LanguageResult struct {
 }
 
 type ConceptResult struct {
-	ConceptID string           `json:"concept_id"`
-	EvaluatedAt time.Time      `json:"evaluated_at"`
-	Languages []LanguageResult `json:"languages"`
+	ConceptID   string           `json:"concept_id"`
+	EvaluatedAt time.Time        `json:"evaluated_at"`
+	Languages   []LanguageResult `json:"languages"`
 }
