@@ -1,7 +1,9 @@
 [
   {
     "id": 1,
+    "description": "",
     "input": "",
-    "expected": ""
+    "expected": "",
+    "hidden": false
   }
 ]

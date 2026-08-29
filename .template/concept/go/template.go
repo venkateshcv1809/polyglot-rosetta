@@ -1,7 +1,8 @@
 package main
 
-import "fmt"
+type Solution struct{}
 
-func main() {
+func (s Solution) Solve(name string) string {
 	// TODO: Implement solution
+	return ""
 }

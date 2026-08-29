@@ -1,5 +1,10 @@
 const std = @import("std");
 
-pub fn main() !void {
-    // TODO: Implement solution
-}
+pub const Solution = struct {
+    pub fn solve(allocator: std.mem.Allocator, name: []const u8) ![]const u8 {
+        // TODO: Implement solution
+        _ = allocator;
+        _ = name;
+        return "";
+    }
+};

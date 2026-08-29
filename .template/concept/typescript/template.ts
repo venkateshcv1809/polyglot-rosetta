@@ -1,5 +1,6 @@
-function main() {
-  // TODO: Implement solution
+export class Solution {
+  solve(name: string): string {
+    // TODO: Implement solution
+    return "";
+  }
 }
-
-main();

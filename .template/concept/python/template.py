@@ -1,7 +1,5 @@
-def main():
-    # TODO: Implement solution
-    pass
+class Solution:
 
-
-if __name__ == "__main__":
-    main()
+    def solve(self, name: str) -> str:
+        # TODO: Implement solution
+        pass
