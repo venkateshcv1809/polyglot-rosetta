@@ -22,17 +22,19 @@ func NewFileResourceRepository() *FileResourceRepository {
 	return &FileResourceRepository{}
 }
 
-// LoadTestCases reads and parses testcases.json from the specified concept directory.
+// LoadTestCases opens and stream-decodes testcases.json from the specified concept directory.
 func (r *FileResourceRepository) LoadTestCases(conceptDir string) (*testcase.TestSuite, error) {
 	filePath := filepath.Join(conceptDir, "testcases.json")
-	data, err := os.ReadFile(filePath)
+	file, err := os.Open(filePath)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read testcases.json at %s: %w", filePath, err)
+		return nil, fmt.Errorf("failed to open testcases.json at %s: %w", filePath, err)
 	}
+	defer file.Close()
 
 	var suite testcase.TestSuite
-	if err := json.Unmarshal(data, &suite); err != nil {
-		return nil, fmt.Errorf("failed to parse testcases.json: %w", err)
+	decoder := json.NewDecoder(file)
+	if err := decoder.Decode(&suite); err != nil {
+		return nil, fmt.Errorf("failed to stream-decode testcases.json syntax error: %w", err)
 	}
 
 	return &suite, nil
