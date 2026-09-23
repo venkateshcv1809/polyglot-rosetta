@@ -54,3 +54,25 @@ func TestTestSuiteJSONUnmarshal(t *testing.T) {
 		t.Errorf("Test case 2 hidden flag incorrect: %+v", tc2)
 	}
 }
+
+func TestTestSuite_GetTestCases(t *testing.T) {
+	suite := &TestSuite{
+		Concept: "two-sum",
+		TestCases: []TestCase{
+			{ID: "tc_1", Hidden: false},
+			{ID: "tc_2", Hidden: true},
+		},
+	}
+
+	// Standard run (public only)
+	publicOnly := suite.GetTestCases(false)
+	if len(publicOnly) != 1 || publicOnly[0].ID != "tc_1" {
+		t.Errorf("expected only public test cases, got %d cases", len(publicOnly))
+	}
+
+	// Evaluation run (include hidden)
+	allCases := suite.GetTestCases(true)
+	if len(allCases) != 2 {
+		t.Errorf("expected all 2 test cases in evaluation mode, got %d", len(allCases))
+	}
+}
