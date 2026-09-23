@@ -34,3 +34,15 @@ func TestRunWithTimeout_TimeoutExceeded(t *testing.T) {
 		t.Errorf("expected timeout error, got nil")
 	}
 }
+
+func TestRunWithTimeout_StreamSeparation(t *testing.T) {
+	// Execute a command that writes to both stdout (or prints version) and check separation.
+	result := RunWithTimeout(context.Background(), 2*time.Second, "go", "version")
+
+	if result.Stdout == "" {
+		t.Errorf("expected stdout buffer to capture output, got empty string")
+	}
+	if result.Stderr != "" {
+		t.Errorf("expected stderr buffer to be empty for a successful go version call, got %s", result.Stderr)
+	}
+}

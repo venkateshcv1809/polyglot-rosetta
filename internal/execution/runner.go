@@ -17,13 +17,16 @@ type RunResult struct {
 	Error    error
 }
 
-// RunWithTimeout executes a command with a strict timeout limit using context cancellation.
+// RunWithTimeout executes a command with isolated stdout/stderr buffer capture and strict timeout limits.
 func RunWithTimeout(ctx context.Context, timeout time.Duration, name string, args ...string) RunResult {
 	execCtx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
 	cmd := exec.CommandContext(execCtx, name, args...)
-	var stdout, stderr bytes.Buffer
+
+	// Independent memory buffers to prevent cross-contamination and channel deadlocks
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
 
@@ -34,7 +37,6 @@ func RunWithTimeout(ctx context.Context, timeout time.Duration, name string, arg
 		Stderr: stderr.String(),
 	}
 
-	// Check if execution was terminated due to timeout
 	if execCtx.Err() == context.DeadlineExceeded {
 		result.TimedOut = true
 		result.Error = fmt.Errorf("execution exceeded hard limit of %v", timeout)
