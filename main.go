@@ -55,6 +55,7 @@ func handleRun(args []string) {
 		os.Exit(1)
 	}
 
+	// Using *lang here resolves the unused variable error
 	fmt.Printf("Running public tests for concept '%s' in language '%s'...\n", *concept, *lang)
 	// TODO: Wire up Workspace provisioning, code runner, and UI summary printer here
 }
@@ -71,7 +72,8 @@ func handleSubmit(args []string) {
 		os.Exit(1)
 	}
 
-	fmt.Printf("Evaluating all test vectors (including hidden) for concept '%s'...\n", *concept)
+	// Using *lang here as well
+	fmt.Printf("Evaluating all test vectors (including hidden) for concept '%s' in language '%s'...\n", *concept, *lang)
 	// TODO: Wire up full suite aggregator and evaluation report printer here
 }
 
