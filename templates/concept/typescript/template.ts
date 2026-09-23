@@ -1,6 +1,6 @@
 export class Solution {
-  solve(name: string): string {
+  solve(inputData: unknown): unknown {
     // TODO: Implement solution
-    return "";
+    return null;
   }
 }

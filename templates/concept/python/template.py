@@ -1,5 +1,5 @@
 class Solution:
 
-    def solve(self, name: str) -> str:
+    def solve(self, input_data: any) -> any:
         # TODO: Implement solution
         pass
