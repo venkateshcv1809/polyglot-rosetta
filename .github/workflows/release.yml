@@ -1,0 +1,43 @@
+name: Release Binaries
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  release:
+    name: Build and Upload Release Assets
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+
+      - name: Build CLI Binary
+        run: |
+          mkdir -p bin
+          go build -o bin/prosetta main.go
+
+      - name: Build WASM Target
+        run: |
+          mkdir -p dist
+          GOOS=js GOARCH=wasm go build -o dist/prosetta.wasm main.go
+          cp "$(go env GOROOT)/misc/wasm/wasm_exec.js" dist/wasm_exec.js
+
+      - name: Create Release and Upload Assets
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            bin/prosetta
+            dist/prosetta.wasm
+            dist/wasm_exec.js
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

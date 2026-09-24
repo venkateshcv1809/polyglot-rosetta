@@ -21,17 +21,17 @@ build-prosetta:
 # Build WebAssembly binary target
 build-wasm:
 	@echo "Building WebAssembly engine target..."
-	@mkdir -p bin
-	GOOS=js GOARCH=wasm go build -o bin/prosetta.wasm main.go
+	@mkdir -p dist
+	GOOS=js GOARCH=wasm go build -o dist/prosetta.wasm main.go
 	@if [ -f "$$(go env GOROOT)/lib/wasm/wasm_exec.js" ]; then \
-		cp "$$(go env GOROOT)/lib/wasm/wasm_exec.js" bin/wasm_exec.js; \
+		cp "$$(go env GOROOT)/lib/wasm/wasm_exec.js" dist/wasm_exec.js; \
 	elif [ -f "$$(go env GOROOT)/misc/wasm/wasm_exec.js" ]; then \
-		cp "$$(go env GOROOT)/misc/wasm/wasm_exec.js" bin/wasm_exec.js; \
+		cp "$$(go env GOROOT)/misc/wasm/wasm_exec.js" dist/wasm_exec.js; \
 	else \
 		echo "Downloading official wasm_exec.js for Go..." && \
-		curl -sSL https://raw.githubusercontent.com/golang/go/master/lib/wasm/wasm_exec.js -o bin/wasm_exec.js; \
+		curl -sSL https://raw.githubusercontent.com/golang/go/master/lib/wasm/wasm_exec.js -o dist/wasm_exec.js; \
 	fi
-	@echo "WASM target and runtime bridge ready in bin/"
+	@echo "WASM target and runtime bridge ready in dist/"
 
 # ------------------------------------------------------------------------------
 # Workspace Generation Shortcuts
