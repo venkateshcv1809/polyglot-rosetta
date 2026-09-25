@@ -1,0 +1,42 @@
+name: Release Binaries
+
+on:
+  push:
+    tags:
+      - 'v*'
+    branches:
+      - develop
+
+jobs:
+  release:
+    name: Build and Upload Release Assets
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+
+      - name: Install Just Task Runner
+        uses: extractions/setup-just@v2
+
+      - name: Run Build Pipeline
+        run: |
+          just build-cli
+          just build-wasm
+
+      - name: Create Release and Upload Assets
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            bin/prosetta
+            dist/prosetta.wasm
+            dist/wasm_exec.js
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
