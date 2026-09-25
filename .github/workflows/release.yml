@@ -23,28 +23,13 @@ jobs:
         with:
           go-version: '1.22'
 
-      - name: Build CLI Binary
-        run: |
-          mkdir -p bin
-          go build -o bin/prosetta main.go
+      - name: Install Just Task Runner
+        uses: extractions/setup-just@v2
 
-      - name: Build WASM Target
+      - name: Run Build Pipeline
         run: |
-          mkdir -p dist bin
-          GOOS=js GOARCH=wasm go build -o dist/prosetta.wasm main.go
-          
-          if [ -f "$(go env GOROOT)/lib/wasm/wasm_exec.js" ]; then
-            cp "$(go env GOROOT)/lib/wasm/wasm_exec.js" dist/wasm_exec.js
-          elif [ -f "$(go env GOROOT)/misc/wasm/wasm_exec.js" ]; then
-            cp "$(go env GOROOT)/misc/wasm/wasm_exec.js" dist/wasm_exec.js
-          else
-            echo "Downloading official wasm_exec.js fallback..."
-            curl -sSL https://raw.githubusercontent.com/golang/go/master/lib/wasm/wasm_exec.js -o dist/wasm_exec.js
-          fi
-          
-          # Copy to bin as well if your release config needs it
-          cp dist/wasm_exec.js bin/wasm_exec.js
-          cp dist/prosetta.wasm bin/prosetta.wasm
+          just build-cli
+          just build-wasm
 
       - name: Create Release and Upload Assets
         uses: softprops/action-gh-release@v2
