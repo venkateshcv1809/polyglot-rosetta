@@ -4,7 +4,8 @@ import (
 	"fmt"
 	"os"
 
-	scaffoldcmd "polyglot-rosetta/internal/commands/scaffold"
+	probecmd "polyglot-rosetta/internal/commands/probe"
+	runcmd "polyglot-rosetta/internal/commands/run"
 )
 
 func main() {
@@ -18,8 +19,10 @@ func main() {
 
 	var err error
 	switch command {
-	case "scaffold":
-		err = scaffoldcmd.Execute(subArgs)
+	case "probe":
+		err = probecmd.Execute(subArgs)
+	case "run":
+		err = runcmd.Execute(subArgs)
 	default:
 		printUsage()
 		err = fmt.Errorf("unknown command %q", command)
@@ -36,5 +39,6 @@ func printUsage() {
 	fmt.Println("\nUsage:")
 	fmt.Println("  prosetta <command> [options]")
 	fmt.Println("\nAvailable Commands:")
-	fmt.Println("  scaffold    Scaffold a category or concept workspace")
+	fmt.Println("  run   Execute code against test cases")
+	fmt.Println("  probe Inspect local system environment for language toolchains")
 }
