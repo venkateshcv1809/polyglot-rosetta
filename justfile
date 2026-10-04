@@ -1,4 +1,6 @@
 # Default recipe executed when running `just` without arguments
+set positional-arguments := true
+
 default: build
 
 # List available recipes
@@ -18,7 +20,7 @@ DIST_DIR := "dist"
 # Build the unified public CLI and WASM assets
 build: build-cli build-wasm
 
-# Build everything (public CLI, WASM, and internal local tools)
+# Build everything (public CLI, WASM, and maintainer tools)
 build-local: build build-internal
 
 # Build the public-facing CLI binary
@@ -28,20 +30,20 @@ build-cli:
 	go build -o {{BIN_DIR}}/prosetta ./cmd/prosetta
 	@echo "Public CLI binary ready in {{BIN_DIR}}/prosetta"
 
-# Build internal local development tools
+# Build standalone binaries
 build-internal:
-	@echo "Building internal local workspace tools..."
+	@echo "Building standalone CLI binaries..."
 	@mkdir -p {{BIN_DIR}}
 	go build -o {{BIN_DIR}}/probe ./cmd/probe
 	go build -o {{BIN_DIR}}/run ./cmd/run
-	go build -o {{BIN_DIR}}/scaffold ./cmd/scaffold
-	@echo "Internal tools ready in {{BIN_DIR}}/"
+	go build -o {{BIN_DIR}}/generate ./cmd/generate
+	@echo "CLI binaries ready in {{BIN_DIR}}/"
 
 # Build WebAssembly binary target
 build-wasm:
 	@echo "Building WebAssembly engine target..."
-	@mkdir --p {{DIST_DIR}}
-	GOOS=js GOARCH=wasm go build -o {{DIST_DIR}}/prosetta.wasm ./cmd/prosetta
+	@mkdir -p {{DIST_DIR}}
+	GOOS=js GOARCH=wasm go build -o {{DIST_DIR}}/prosetta.wasm ./cmd/wasm
 	@GOROOT="$$(go env GOROOT)"; \
 	if [ -n "$$GOROOT" ] && [ -f "$$GOROOT/lib/wasm/wasm_exec.js" ]; then \
 		echo "Copying wasm_exec.js from GOROOT/lib/wasm..."; \
@@ -59,32 +61,33 @@ build-wasm:
 # Workspace Generation Shortcuts
 # ------------------------------------------------------------------------------
 
-# Scaffold a new category (e.g. just category path=algorithms/math)
-category path="":
-    @echo "Scaffolding category..."
-    go run ./cmd/prosetta generate category {{path}}
+# Scaffold a new category (e.g. just category --id=sorting --title=Sorting)
+category *args:
+    go run ./cmd/generate category "$@"
 
-# Scaffold a new concept (e.g. just concept path=algorithms/math/two-sum)
-concept path="":
-    @echo "Scaffolding concept..."
-    go run ./cmd/prosetta generate concept {{path}}
+# Scaffold a new concept (e.g. just concept --parent=algorithms --id=two-sum --title="Two Sum")
+concept *args:
+    go run ./cmd/generate concept "$@"
 
-# Scan src/ workspace directory and regenerate manifest.json
-manifest:
-    @echo "Generating manifest.json..."
-    go run ./cmd/prosetta generate manifest
+# Compile dist/index.json from problems/
+index *args:
+    go run ./cmd/generate index "$@"
 
 # ------------------------------------------------------------------------------
 # Execution Shortcuts
 # ------------------------------------------------------------------------------
 
-# Run evaluation on public cases (e.g. just run src/fundamentals/hello-world zig)
-run concept_path="" lang="":
-    go run ./cmd/prosetta run {{concept_path}} {{ if lang != "" { "--lang=" + lang } else { "" } }}
+# Probe local language toolchains
+probe *args:
+    go run ./cmd/prosetta probe "$@"
+
+# Run evaluation on public cases (e.g. just run --concept=hello-world --path=problems/.../go/main.go)
+run *args:
+    go run ./cmd/prosetta run "$@"
 
 # Run full evaluation against all cases (public + hidden)
-submit concept_path="" lang="":
-    go run ./cmd/prosetta run {{concept_path}} --all {{ if lang != "" { "--lang=" + lang } else { "" } }}
+submit *args:
+    go run ./cmd/prosetta run --all "$@"
 
 # ------------------------------------------------------------------------------
 # Development & Testing
