@@ -1,15 +1,13 @@
+// Command run executes a solution against the test cases for a catalog concept.
 package main
 
 import (
-	"fmt"
 	"os"
 
+	"polyglot-rosetta/internal/cli"
 	runcmd "polyglot-rosetta/internal/commands/run"
 )
 
 func main() {
-	if err := runcmd.Execute(os.Args[1:]); err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-		os.Exit(1)
-	}
+	cli.ExitOnError(runcmd.Execute(os.Args[1:]))
 }

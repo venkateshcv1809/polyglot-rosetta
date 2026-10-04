@@ -1,15 +1,13 @@
+// Command probe inspects the language toolchains available on the local system.
 package main
 
 import (
-	"fmt"
 	"os"
 
+	"polyglot-rosetta/internal/cli"
 	probecmd "polyglot-rosetta/internal/commands/probe"
 )
 
 func main() {
-	if err := probecmd.Execute(os.Args[1:]); err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
-	}
+	cli.ExitOnError(probecmd.Execute(os.Args[1:]))
 }
