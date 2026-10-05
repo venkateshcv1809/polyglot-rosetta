@@ -132,6 +132,10 @@ url = "https://github.com/astral-sh/python-build-standalone/releases/download/20
 version = "1.97.1"
 backend = "core:rust"
 
+[[tools.yarn]]
+version = "4.18.1"
+backend = "vfox:mise-plugins/vfox-yarn"
+
 [[tools.zig]]
 version = "0.16.0"
 backend = "core:zig"
