@@ -1,5 +1,5 @@
-// Command generate provides maintainer tooling for scaffolding catalog content
-// and compiling the generated index.
+// Command generate provides maintainer tooling for scaffolding, listing, and
+// packaging catalog content.
 package main
 
 import (
