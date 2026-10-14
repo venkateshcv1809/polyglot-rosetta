@@ -12,7 +12,7 @@ func TestCommand(t *testing.T) {
 	if command.Name != commandName || command.Summary != commandSummary {
 		t.Fatalf("command = %#v", command)
 	}
-	wantNames := []string{"category", "concept", "index"}
+	wantNames := []string{"bundle", "category", "concept", "list"}
 	if len(command.Subcommands) != len(wantNames) {
 		t.Fatalf("subcommands = %d, want %d", len(command.Subcommands), len(wantNames))
 	}
@@ -52,8 +52,14 @@ func TestExecute_CategoryHelpForwardsSubcommand(t *testing.T) {
 	}
 }
 
-func TestExecute_IndexUnknownFlag(t *testing.T) {
-	if err := Execute([]string{"index", "-bogus"}); err == nil {
-		t.Fatal("expected flag parse error")
+func TestExecute_IndexIsNotACommand(t *testing.T) {
+	if err := Execute([]string{"index"}); err == nil || !strings.Contains(err.Error(), "unknown command") {
+		t.Fatalf("error = %v, want unknown command", err)
+	}
+}
+
+func TestExecute_ListHelpForwardsSubcommand(t *testing.T) {
+	if err := Execute([]string{"list", "-h"}); !errors.Is(err, flag.ErrHelp) {
+		t.Fatalf("got %v, want flag.ErrHelp", err)
 	}
 }
