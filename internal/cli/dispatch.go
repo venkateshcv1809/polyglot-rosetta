@@ -36,7 +36,11 @@ func ExitCode(err error, stderr io.Writer) int {
 	if err == nil || errors.Is(err, flag.ErrHelp) {
 		return 0
 	}
-	fmt.Fprintf(stderr, "error: %v\n", err)
+	var reported *reportedError
+	if errors.As(err, &reported) {
+		return 1
+	}
+	printFailure(stderr, err)
 	return 1
 }
 

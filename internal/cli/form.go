@@ -38,7 +38,6 @@ func PromptForm(input io.Reader, output io.Writer, fields []PromptField, existin
 			if err := writePrompt(output, field); err != nil {
 				return nil, fmt.Errorf("write prompt for %q: %w", field.Key, err)
 			}
-
 			line, err := reader.ReadString('\n')
 			if err != nil && !errors.Is(err, io.EOF) {
 				return nil, fmt.Errorf("read value for %q: %w", field.Key, err)
@@ -62,7 +61,6 @@ func PromptForm(input io.Reader, output io.Writer, fields []PromptField, existin
 			break
 		}
 	}
-
 	return result, nil
 }
 

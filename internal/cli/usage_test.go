@@ -8,17 +8,17 @@ import (
 func TestPrintUsage(t *testing.T) {
 	var output bytes.Buffer
 	PrintUsage(&output, "prosetta run", []string{
-		"--concept=<id> --path=<file> [options]",
+		"--id=<id> --lang=<language> --stdin [options]",
 	}, []Option{
-		{Name: "concept", Value: "id", Description: "Concept identifier", Required: true},
-		{Name: "lang", Value: "language", Description: "Programming language", Default: "go"},
+		{Name: "id", Value: "id", Description: "Concept identifier", Required: true},
+		{Name: "lang", Value: "language", Description: "Programming language", Required: true},
 	})
 
 	want := "Usage:\n" +
-		"  prosetta run --concept=<id> --path=<file> [options]\n" +
+		"  prosetta run --id=<id> --lang=<language> --stdin [options]\n" +
 		"\nOptions:\n" +
-		"  --concept=<id>     Concept identifier (required)\n" +
-		"  --lang=<language>  Programming language (default: go)\n"
+		"  --id=<id>          Concept identifier (required)\n" +
+		"  --lang=<language>  Programming language (required)\n"
 	if output.String() != want {
 		t.Fatalf("output:\n%q\nwant:\n%q", output.String(), want)
 	}

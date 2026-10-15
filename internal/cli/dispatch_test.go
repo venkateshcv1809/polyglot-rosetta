@@ -129,7 +129,7 @@ func TestExitCode(t *testing.T) {
 	if code := ExitCode(errors.New("failed"), &stderr); code != 1 {
 		t.Fatalf("exit code = %d, want 1", code)
 	}
-	if stderr.String() != "error: failed\n" {
+	if stderr.String() != "\nERROR:\n  failed\n" {
 		t.Fatalf("stderr = %q", stderr.String())
 	}
 }
