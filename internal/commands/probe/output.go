@@ -56,7 +56,10 @@ func writeTextResult(output io.Writer, result probeapi.Result) error {
 	if err != nil {
 		return fmt.Errorf("parse probe output template: %w", err)
 	}
-	if err := tmpl.ExecuteTemplate(output, "probe.tmpl", struct{ Rows []displayRow }{Rows: rows}); err != nil {
+	if err := tmpl.ExecuteTemplate(output, "probe.tmpl", struct {
+		Rows    []displayRow
+		Cleared bool
+	}{Rows: rows, Cleared: result.Status == probeapi.StatusCleared}); err != nil {
 		return fmt.Errorf("render probe output: %w", err)
 	}
 	return nil

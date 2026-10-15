@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -63,6 +64,7 @@ func TestParseOptionsRejectsUnsupportedLanguage(t *testing.T) {
 }
 
 func TestProbeReportsAllRequiredBinaries(t *testing.T) {
+	useTestCache(t)
 	var output bytes.Buffer
 	lookPath := func(binary string) (string, error) {
 		if binary == "node" {
@@ -81,6 +83,7 @@ func TestProbeReportsAllRequiredBinaries(t *testing.T) {
 }
 
 func TestProbeSelectedLanguageOutput(t *testing.T) {
+	useTestCache(t)
 	var output bytes.Buffer
 	err := probeWithInspector(
 		options{language: "typescript"},
@@ -99,6 +102,7 @@ func TestProbeSelectedLanguageOutput(t *testing.T) {
 }
 
 func TestProbePropagatesOutputFailure(t *testing.T) {
+	useTestCache(t)
 	want := errors.New("write failed")
 	err := probeWithInspector(
 		options{language: "go"},
@@ -116,6 +120,7 @@ type failingWriter struct{ err error }
 func (w failingWriter) Write([]byte) (int, error) { return 0, w.err }
 
 func TestProbeRejectsBinaryThatCannotReportVersion(t *testing.T) {
+	useTestCache(t)
 	var output bytes.Buffer
 	err := probeWithInspector(
 		options{language: "go"},
@@ -126,4 +131,11 @@ func TestProbeRejectsBinaryThatCannotReportVersion(t *testing.T) {
 	if err == nil || !strings.Contains(output.String(), "unusable") {
 		t.Fatalf("error = %v, output = %q", err, output.String())
 	}
+}
+
+func useTestCache(t *testing.T) string {
+	t.Helper()
+	path := filepath.Join(t.TempDir(), "toolchains.json")
+	t.Setenv("PROSETTA_TOOLCHAIN_CACHE", path)
+	return path
 }

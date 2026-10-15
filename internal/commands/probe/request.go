@@ -13,6 +13,7 @@ import (
 type options struct {
 	language string
 	format   string
+	clear    bool
 }
 
 func parseOptions(commandPath string, args []string) (options, error) {
@@ -25,11 +26,14 @@ func parseOptionsWithOutput(commandPath string, args []string, output io.Writer)
 	parser.StringVar(&opts.language, "", cli.Option{
 		Name:        "lang",
 		Value:       "language",
-		Description: "Language to probe: go, python, rust, typescript, or zig",
+		Description: "Language to display; cache refresh checks all supported languages",
 		Default:     "all",
 	})
 	parser.StringVar(&opts.format, "text", cli.Option{
 		Name: "format", Value: "text|json", Description: "Output format", Default: "text",
+	})
+	parser.BoolVar(&opts.clear, false, cli.Option{
+		Name: "clear", Description: "Remove cached toolchain results without probing",
 	})
 	if requestsJSON(args) {
 		parser.SetOutput(io.Discard)
@@ -52,6 +56,10 @@ func parseOptionsWithOutput(commandPath string, args []string, output io.Writer)
 	if opts.format != "text" && opts.format != "json" {
 		parser.PrintUsage()
 		return options{}, fmt.Errorf("unsupported output format %q: use text or json", opts.format)
+	}
+	if opts.clear && opts.language != "" {
+		parser.PrintUsage()
+		return options{}, fmt.Errorf("--clear cannot be combined with --lang: the cache covers all languages")
 	}
 	return opts, nil
 }

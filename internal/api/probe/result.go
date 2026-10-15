@@ -9,6 +9,8 @@ const (
 	StatusOK Status = "ok"
 	// StatusUnavailable means at least one required tool is missing or unusable.
 	StatusUnavailable Status = "unavailable"
+	// StatusCleared means the saved toolchain snapshot was removed.
+	StatusCleared Status = "cleared"
 	// StatusError means the request could not be parsed.
 	StatusError Status = "error"
 )

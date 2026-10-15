@@ -55,3 +55,15 @@ func TestParseOptionsHelpStaysText(t *testing.T) {
 		t.Fatalf("error = %v, output = %q", err, output.String())
 	}
 }
+
+func TestParseOptionsClear(t *testing.T) {
+	var output bytes.Buffer
+	opts, err := parseOptionsWithOutput("prosetta probe", []string{"--clear", "--format=json"}, &output)
+	if err != nil || !opts.clear || opts.format != "json" || output.Len() != 0 {
+		t.Fatalf("options = %+v, output = %q, error = %v", opts, output.String(), err)
+	}
+	_, err = parseOptionsWithOutput("prosetta probe", []string{"--clear", "--lang=go", "--format=json"}, &output)
+	if err == nil || !strings.Contains(err.Error(), "cannot be combined") || output.Len() != 0 {
+		t.Fatalf("error = %v, output = %q", err, output.String())
+	}
+}
