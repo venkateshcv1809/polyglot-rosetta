@@ -2,14 +2,14 @@ package scaffoldcmd
 
 import (
 	"polyglot-rosetta/internal/cli"
-	"polyglot-rosetta/pkg/constants"
+	"polyglot-rosetta/internal/domain/catalog"
 )
 
-// Prompt order and rules for creating categories.
+// CategoryFormSpec defines the prompt order and rules for creating categories.
 var CategoryFormSpec = []cli.PromptField{
 	{
 		Key:      "id",
-		Prompt:   "Category ID slug (e.g. 'sorting')",
+		Prompt:   "Category directory name (e.g. 'sorting')",
 		Required: true,
 	},
 	{
@@ -29,7 +29,7 @@ var CategoryFormSpec = []cli.PromptField{
 	},
 }
 
-// Prompt order and rules for creating concepts.
+// ConceptFormSpec defines the prompt order and rules for creating concepts.
 var ConceptFormSpec = []cli.PromptField{
 	{
 		Key:      "parent",
@@ -38,7 +38,7 @@ var ConceptFormSpec = []cli.PromptField{
 	},
 	{
 		Key:      "id",
-		Prompt:   "Concept ID slug (e.g. 'two-sum')",
+		Prompt:   "Concept directory name (e.g. 'two-sum')",
 		Required: true,
 	},
 	{
@@ -55,6 +55,6 @@ var ConceptFormSpec = []cli.PromptField{
 		Key:          "difficulty",
 		Prompt:       "Difficulty Rating (Easy, Medium, Hard)",
 		Required:     false,
-		DefaultValue: constants.ConceptDifficulty,
+		DefaultValue: string(catalog.DifficultyEasy),
 	},
 }
