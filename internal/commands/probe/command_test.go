@@ -1,17 +1,12 @@
 package probecmd
 
 import (
+	"bytes"
 	"errors"
-	"flag"
+	"fmt"
 	"strings"
 	"testing"
 )
-
-func TestExecuteHelp(t *testing.T) {
-	if err := Execute([]string{"--help"}); !errors.Is(err, flag.ErrHelp) {
-		t.Fatalf("error = %v, want flag.ErrHelp", err)
-	}
-}
 
 func TestCommand(t *testing.T) {
 	command := Command()
@@ -36,6 +31,7 @@ func TestParseOptions(t *testing.T) {
 		wantLanguage string
 	}{
 		{name: "all languages by default"},
+		{name: "all languages explicitly", args: []string{"--lang=all"}},
 		{name: "selected language", args: []string{"--lang=python"}, wantLanguage: "python"},
 	}
 
@@ -59,19 +55,75 @@ func TestParseOptionsRejectsPositionalArgument(t *testing.T) {
 	}
 }
 
-func TestBinaryName(t *testing.T) {
-	tests := map[string]string{
-		"go":         "go",
-		"python":     "python3",
-		"rust":       "rustc",
-		"typescript": "tsc",
-		"ts":         "tsc",
-		"zig":        "zig",
+func TestParseOptionsRejectsUnsupportedLanguage(t *testing.T) {
+	_, err := parseOptions("probe", []string{"--lang=ruby"})
+	if err == nil || !strings.Contains(err.Error(), "unsupported language") {
+		t.Fatalf("error = %v, want unsupported language", err)
 	}
+}
 
-	for language, want := range tests {
-		if got := binaryName(language); got != want {
-			t.Errorf("binaryName(%q) = %q, want %q", language, got, want)
+func TestProbeReportsAllRequiredBinaries(t *testing.T) {
+	var output bytes.Buffer
+	lookPath := func(binary string) (string, error) {
+		if binary == "node" {
+			return "", fmt.Errorf("not found")
 		}
+		return "/toolchains/" + binary, nil
+	}
+	inspect := func(binary, path string) (string, error) { return binary + " 1.0", nil }
+	if err := probeWithInspector(options{}, &output, lookPath, inspect); !errors.Is(err, errToolchainsUnavailable) {
+		t.Fatalf("probeWithInspector error = %v, want unavailable", err)
+	}
+	got := output.String()
+	if !strings.Contains(got, "OK    go") || !strings.Contains(got, "FAIL  typescript") || !strings.Contains(got, `missing "node"`) {
+		t.Fatalf("output:\n%s", got)
+	}
+}
+
+func TestProbeSelectedLanguageOutput(t *testing.T) {
+	var output bytes.Buffer
+	err := probeWithInspector(
+		options{language: "typescript"},
+		&output,
+		func(binary string) (string, error) { return "/tools/" + binary, nil },
+		func(binary, path string) (string, error) { return binary + " 1.0", nil },
+	)
+	if err != nil {
+		t.Fatalf("probeWithInspector: %v", err)
+	}
+	want := "\nToolchains:\n" +
+		"  OK    typescript    /tools/tsc [tsc 1.0], /tools/node [node 1.0]\n"
+	if got := output.String(); got != want {
+		t.Fatalf("output = %q, want %q", got, want)
+	}
+}
+
+func TestProbePropagatesOutputFailure(t *testing.T) {
+	want := errors.New("write failed")
+	err := probeWithInspector(
+		options{language: "go"},
+		failingWriter{err: want},
+		func(binary string) (string, error) { return "/tools/" + binary, nil },
+		func(binary, path string) (string, error) { return "go 1.0", nil },
+	)
+	if !errors.Is(err, want) {
+		t.Fatalf("error = %v, want write failure", err)
+	}
+}
+
+type failingWriter struct{ err error }
+
+func (w failingWriter) Write([]byte) (int, error) { return 0, w.err }
+
+func TestProbeRejectsBinaryThatCannotReportVersion(t *testing.T) {
+	var output bytes.Buffer
+	err := probeWithInspector(
+		options{language: "go"},
+		&output,
+		func(binary string) (string, error) { return "/toolchains/" + binary, nil },
+		func(binary, path string) (string, error) { return "", errors.New("broken") },
+	)
+	if err == nil || !strings.Contains(output.String(), "unusable") {
+		t.Fatalf("error = %v, output = %q", err, output.String())
 	}
 }
