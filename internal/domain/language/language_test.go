@@ -48,6 +48,17 @@ func TestIsValid(t *testing.T) {
 	}
 }
 
+func TestLanguageFileExtension(t *testing.T) {
+	tests := map[Language]string{
+		Go: "go", Python: "py", Rust: "rs", TypeScript: "ts", Zig: "zig", Language("ruby"): "",
+	}
+	for language, want := range tests {
+		if got := language.FileExtension(); got != want {
+			t.Errorf("FileExtension(%q) = %q, want %q", language, got, want)
+		}
+	}
+}
+
 func TestAllSupported(t *testing.T) {
 	supported := AllSupported()
 	if len(supported) != 5 {

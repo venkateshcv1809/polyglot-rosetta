@@ -55,6 +55,25 @@ func TestTestSuiteJSONUnmarshal(t *testing.T) {
 	}
 }
 
+func TestTestCaseJSONUnmarshalNumericID(t *testing.T) {
+	var testCase TestCase
+	if err := json.Unmarshal([]byte(`{"id": 42}`), &testCase); err != nil {
+		t.Fatalf("unmarshal numeric ID: %v", err)
+	}
+	if testCase.ID != "42" {
+		t.Fatalf("ID = %q, want %q", testCase.ID, "42")
+	}
+}
+
+func TestTestCaseJSONUnmarshalRejectsInvalidID(t *testing.T) {
+	for _, input := range []string{`{}`, `{"id": ""}`, `{"id": true}`} {
+		var testCase TestCase
+		if err := json.Unmarshal([]byte(input), &testCase); err == nil {
+			t.Errorf("json.Unmarshal(%s) returned nil error", input)
+		}
+	}
+}
+
 func TestTestSuite_GetTestCases(t *testing.T) {
 	suite := &TestSuite{
 		Concept: "two-sum",
