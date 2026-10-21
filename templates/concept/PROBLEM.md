@@ -22,14 +22,14 @@
 
 **Input:**
 ```json
-{{EXAMPLE_INPUT}}
+{}
 ```
 
-**Outut:**
+**Output:**
 ```json
-{{EXAMPLE_OUTUT}}
+null
 ```
 
-## Explanation:
+## Explanation
 
-Briefly explain why this output is produced.
+Replace the placeholder values above and explain why the expected output is produced.

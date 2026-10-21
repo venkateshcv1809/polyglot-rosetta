@@ -16,8 +16,10 @@ Explain the core theory, algorithmic approach, and time/space complexity here.
 ```go
 package main
 
-// {{TITLE}} reference implementation
-func Solution() {
-	// Implementation details
+type Solution struct{}
+
+// Solve returns the result for one testcase input.
+func (Solution) Solve(input any) any {
+	return nil
 }
 ```

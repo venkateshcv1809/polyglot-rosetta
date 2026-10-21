@@ -1,7 +1,8 @@
 const std = @import("std");
 
 pub const Solution = struct {
-    pub fn solve(allocator: std.mem.Allocator, input_data: []const u8) ![]const u8 {
+    // Return plain text for string expectations and compact JSON for structured values.
+    pub fn solve(allocator: std.mem.Allocator, input_data: std.json.Value) ![]const u8 {
         _ = allocator;
         _ = input_data;
         // TODO: Implement solution
