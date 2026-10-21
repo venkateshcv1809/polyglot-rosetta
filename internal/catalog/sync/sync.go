@@ -16,9 +16,8 @@ import (
 	"time"
 
 	catalogbundle "polyglot-rosetta/internal/catalog/bundle"
+	"polyglot-rosetta/internal/config"
 )
-
-const cacheEnvironment = "PROSETTA_CATALOG_CACHE"
 
 var client = &http.Client{
 	Timeout: 60 * time.Second,
@@ -35,14 +34,11 @@ var client = &http.Client{
 
 // DefaultDir returns the cache root shared by catalog and run commands.
 func DefaultDir() (string, error) {
-	if value := strings.TrimSpace(os.Getenv(cacheEnvironment)); value != "" {
-		return filepath.Abs(value)
-	}
-	root, err := os.UserCacheDir()
+	paths, err := config.NativeCachePaths()
 	if err != nil {
 		return "", err
 	}
-	return filepath.Join(root, "prosetta", "catalog"), nil
+	return paths.Catalog, nil
 }
 
 // ActiveProblemsDir returns the activated snapshot's problems tree, if present.

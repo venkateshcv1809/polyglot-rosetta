@@ -4,16 +4,22 @@ import (
 	"errors"
 	"flag"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 )
 
 func TestMainHandlesHelp(t *testing.T) {
+	location := filepath.Join(t.TempDir(), "config.json")
+	t.Setenv("PROSETTA_CONFIG", location)
 	originalArgs := os.Args
 	t.Cleanup(func() { os.Args = originalArgs })
 	os.Args = []string{"prosetta", "--help"}
 
 	main()
+	if _, err := os.Stat(location); !os.IsNotExist(err) {
+		t.Fatalf("help created cache config: %v", err)
+	}
 }
 
 func TestExecute_PublicSurface(t *testing.T) {

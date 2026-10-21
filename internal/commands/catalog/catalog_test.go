@@ -14,11 +14,12 @@ import (
 
 func TestCatalogCommandTextSuccess(t *testing.T) {
 	t.Setenv("PROSETTA_CATALOG_URL", "")
+	cacheDir := useTestCatalogCache(t)
 	var output bytes.Buffer
 	err := catalogCommandWithIO(context.Background(), "prosetta catalog", []string{
-		"--url=https://static.example/problems/", "--cache=/tmp/catalog",
+		"--url=https://static.example/problems/",
 	}, &output, func(_ context.Context, url, cache string) (string, error) {
-		if url != "https://static.example/problems/" || cache != "/tmp/catalog" {
+		if url != "https://static.example/problems/" || cache != cacheDir {
 			t.Fatalf("sync args = %q, %q", url, cache)
 		}
 		return "/tmp/catalog/versions/abc/problems", nil
@@ -30,6 +31,7 @@ func TestCatalogCommandTextSuccess(t *testing.T) {
 
 func TestCatalogCommandJSONSuccess(t *testing.T) {
 	t.Setenv("PROSETTA_CATALOG_URL", "")
+	useTestCatalogCache(t)
 	var output bytes.Buffer
 	err := catalogCommandWithIO(context.Background(), "prosetta catalog", []string{
 		"--url=https://static.example/problems/", "--format=json",
@@ -50,6 +52,7 @@ func TestCatalogCommandJSONSuccess(t *testing.T) {
 
 func TestCatalogCommandJSONFailures(t *testing.T) {
 	t.Setenv("PROSETTA_CATALOG_URL", "")
+	useTestCatalogCache(t)
 	for _, test := range []struct {
 		name string
 		args []string
@@ -83,6 +86,7 @@ func TestCatalogCommandJSONFailures(t *testing.T) {
 
 func TestCatalogCommandTextFailureUsesSharedTemplate(t *testing.T) {
 	t.Setenv("PROSETTA_CATALOG_URL", "")
+	useTestCatalogCache(t)
 	var output, stderr bytes.Buffer
 	err := catalogCommandWithIO(context.Background(), "prosetta catalog", []string{
 		"--url=https://static.example/problems/",

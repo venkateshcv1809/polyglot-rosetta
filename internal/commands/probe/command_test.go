@@ -135,7 +135,8 @@ func TestProbeRejectsBinaryThatCannotReportVersion(t *testing.T) {
 
 func useTestCache(t *testing.T) string {
 	t.Helper()
-	path := filepath.Join(t.TempDir(), "toolchains.json")
-	t.Setenv("PROSETTA_TOOLCHAIN_CACHE", path)
-	return path
+	base := t.TempDir()
+	t.Setenv("XDG_CACHE_HOME", base)
+	t.Setenv("PROSETTA_CONFIG", filepath.Join(t.TempDir(), "config.json"))
+	return filepath.Join(base, "prosetta", "toolchains.json")
 }

@@ -10,13 +10,13 @@ import (
 	"slices"
 	"strings"
 
+	"polyglot-rosetta/internal/config"
 	"polyglot-rosetta/internal/domain/language"
 )
 
 const (
-	cacheEnvironment = "PROSETTA_TOOLCHAIN_CACHE"
-	cacheSchema      = 2
-	maxCacheBytes    = 64 << 10
+	cacheSchema   = 2
+	maxCacheBytes = 64 << 10
 )
 
 // ErrUnavailable means the cached probe found missing or unusable tools.
@@ -35,14 +35,11 @@ type cacheSnapshot struct {
 
 // DefaultCachePath returns the persistent native toolchain cache location.
 func DefaultCachePath() (string, error) {
-	if value := strings.TrimSpace(os.Getenv(cacheEnvironment)); value != "" {
-		return filepath.Abs(value)
-	}
-	root, err := os.UserCacheDir()
+	paths, err := config.NativeCachePaths()
 	if err != nil {
-		return "", fmt.Errorf("resolve toolchain cache directory: %w", err)
+		return "", err
 	}
-	return filepath.Join(root, "prosetta", "toolchains.json"), nil
+	return paths.Toolchain, nil
 }
 
 // ClearCache removes the saved snapshot. Clearing an absent cache succeeds so

@@ -21,17 +21,10 @@ func parseOptions(commandPath string, args []string) (options, error) {
 }
 
 func parseOptionsWithOutput(commandPath string, args []string, output io.Writer) (options, error) {
-	cache, err := catalogsync.DefaultDir()
-	if err != nil {
-		return options{}, err
-	}
 	var opts options
 	parser := cli.NewFlagParser(commandPath, "--url=<directory-url> [options]")
 	parser.StringVar(&opts.url, os.Getenv("PROSETTA_CATALOG_URL"), cli.Option{
 		Name: "url", Value: "directory-url", Description: "Static URL containing manifest.json and content archives", Required: true,
-	})
-	parser.StringVar(&opts.cache, cache, cli.Option{
-		Name: "cache", Value: "path", Description: "Local catalog cache directory",
 	})
 	parser.StringVar(&opts.format, "text", cli.Option{
 		Name: "format", Value: "text|json", Description: "Output format", Default: "text",
@@ -48,14 +41,15 @@ func parseOptionsWithOutput(commandPath string, args []string, output io.Writer)
 		parser.PrintUsage()
 		return options{}, fmt.Errorf("missing required option: --url")
 	}
-	if strings.TrimSpace(opts.cache) == "" {
-		parser.PrintUsage()
-		return options{}, fmt.Errorf("cache directory cannot be empty")
-	}
 	if opts.format != "text" && opts.format != "json" {
 		parser.PrintUsage()
 		return options{}, fmt.Errorf("unsupported output format %q: use text or json", opts.format)
 	}
+	cache, err := catalogsync.DefaultDir()
+	if err != nil {
+		return options{}, err
+	}
+	opts.cache = cache
 	return opts, nil
 }
 

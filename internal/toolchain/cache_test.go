@@ -171,9 +171,11 @@ func TestRequireAvailableFailsWhenCacheCannotBeWritten(t *testing.T) {
 	}
 }
 
-func TestDefaultCachePathHonorsOverride(t *testing.T) {
-	want := filepath.Join(t.TempDir(), "toolchains.json")
-	t.Setenv(cacheEnvironment, want)
+func TestDefaultCachePathUsesSharedConfig(t *testing.T) {
+	base := t.TempDir()
+	t.Setenv("XDG_CACHE_HOME", base)
+	t.Setenv("PROSETTA_CONFIG", filepath.Join(t.TempDir(), "config.json"))
+	want := filepath.Join(base, "prosetta", "toolchains.json")
 	path, err := DefaultCachePath()
 	if err != nil || path != want {
 		t.Fatalf("path = %q, error = %v; want %q", path, err, want)

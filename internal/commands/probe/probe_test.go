@@ -103,11 +103,11 @@ func TestProbeCommandJSONParseError(t *testing.T) {
 }
 
 func TestProbeCommandReportsCacheWriteFailureAsJSON(t *testing.T) {
-	parent := filepath.Join(t.TempDir(), "not-a-directory")
+	cachePath := useTestCache(t)
+	parent := filepath.Dir(cachePath)
 	if err := os.WriteFile(parent, []byte("file"), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	t.Setenv("PROSETTA_TOOLCHAIN_CACHE", filepath.Join(parent, "toolchains.json"))
 	var output, stderr bytes.Buffer
 	err := probeCommandWithIO("prosetta probe", []string{"--lang=go", "--format=json"}, &output,
 		func(binary string) (string, error) { return "/tools/" + binary, nil },
@@ -160,8 +160,10 @@ func TestProbeClearDoesNotInspectAndNextRunCanRebuild(t *testing.T) {
 }
 
 func TestProbeClearReportsFailureAsJSON(t *testing.T) {
-	cachePath := t.TempDir()
-	t.Setenv("PROSETTA_TOOLCHAIN_CACHE", cachePath)
+	cachePath := useTestCache(t)
+	if err := os.MkdirAll(cachePath, 0o755); err != nil {
+		t.Fatal(err)
+	}
 	var output, stderr bytes.Buffer
 	err := probeCommandWithIO("prosetta probe", []string{"--clear", "--format=json"}, &output,
 		func(string) (string, error) { t.Fatal("clear performed lookup"); return "", nil },
@@ -180,7 +182,10 @@ func TestProbeClearReportsFailureAsJSON(t *testing.T) {
 }
 
 func TestProbeClearTextFailureHasNoToolchainHeading(t *testing.T) {
-	t.Setenv("PROSETTA_TOOLCHAIN_CACHE", t.TempDir())
+	cachePath := useTestCache(t)
+	if err := os.MkdirAll(cachePath, 0o755); err != nil {
+		t.Fatal(err)
+	}
 	var output, stderr bytes.Buffer
 	err := probeCommandWithIO("prosetta probe", []string{"--clear"}, &output,
 		func(string) (string, error) { t.Fatal("clear performed lookup"); return "", nil },
