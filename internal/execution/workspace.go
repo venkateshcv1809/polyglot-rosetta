@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 )
 
-// Workspace manages isolated temporary directories for individual execution sessions.
+// Workspace manages dedicated temporary directories for execution sessions.
 type Workspace struct {
 	Dir string
 }
@@ -28,10 +28,13 @@ func (w *Workspace) Cleanup() error {
 	return os.RemoveAll(w.Dir)
 }
 
-// WriteFile writes a raw source code string or asset into the isolated workspace.
+// WriteFile writes a raw source code string or asset into the workspace.
 func (w *Workspace) WriteFile(filename, content string) (string, error) {
+	if filename == "" || filepath.IsAbs(filename) || filepath.Base(filename) != filename {
+		return "", fmt.Errorf("invalid workspace filename %q", filename)
+	}
 	filePath := filepath.Join(w.Dir, filename)
-	if err := os.WriteFile(filePath, []byte(content), 0644); err != nil {
+	if err := os.WriteFile(filePath, []byte(content), 0o644); err != nil {
 		return "", fmt.Errorf("failed to write file %s in workspace: %w", filename, err)
 	}
 	return filePath, nil

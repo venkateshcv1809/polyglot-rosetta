@@ -4,40 +4,23 @@ import (
 	"polyglot-rosetta/internal/domain/language"
 )
 
+// Status describes the overall outcome of an execution request.
 type Status string
 
 const (
-	StatusPassed  Status = "passed"
-	StatusFailed  Status = "failed"
-	StatusError   Status = "error"
+	// StatusPassed indicates that every selected testcase passed.
+	StatusPassed Status = "passed"
+	// StatusFailed indicates that at least one testcase failed.
+	StatusFailed Status = "failed"
+	// StatusError indicates that evaluation could not complete.
+	StatusError Status = "error"
+	// StatusTimeout indicates that evaluation exceeded its deadline.
 	StatusTimeout Status = "timeout"
 )
 
+// Request contains the native execution inputs for one solution.
 type Request struct {
 	Language   language.Language `json:"language"`
-	ConceptDir string            `json:"concept_dir"`
 	SourceCode string            `json:"source_code"`
 	IsSubmit   bool              `json:"is_submit"`
-}
-
-type Result struct {
-	Language    language.Language `json:"language"`
-	Status      Status            `json:"status"`
-	ExitCode    int               `json:"exit_code"`
-	Timeout     bool              `json:"timeout"`
-	TotalPassed int               `json:"total_passed"`
-	TotalFailed int               `json:"total_failed"`
-	DurationMs  int64             `json:"duration_ms"`
-	TestResults []TestCaseResult  `json:"test_results"`
-	Stdout      string            `json:"stdout,omitempty"`
-	Stderr      string            `json:"stderr,omitempty"`
-}
-
-type TestCaseResult struct {
-	ID         string `json:"id"`
-	Passed     bool   `json:"passed"`
-	Expected   string `json:"expected"`
-	Actual     string `json:"actual"`
-	Error      string `json:"error,omitempty"`
-	DurationMs int64  `json:"duration_ms"`
 }

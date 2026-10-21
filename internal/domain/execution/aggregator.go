@@ -4,12 +4,24 @@ import (
 	"polyglot-rosetta/internal/domain/testcase"
 )
 
+// TestStatus identifies how one testcase finished.
+type TestStatus string
+
+const (
+	TestPassed      TestStatus = "passed"
+	TestWrongAnswer TestStatus = "wrong_answer"
+	TestCrashed     TestStatus = "crashed"
+	TestTimeout     TestStatus = "timeout"
+)
+
 // TestOutcome records the result of an individual test vector execution.
 type TestOutcome struct {
-	TestCaseID string
-	Passed     bool
-	Message    string
-	Hidden     bool
+	TestCaseID     string
+	Status         TestStatus
+	Passed         bool
+	Message        string
+	Hidden         bool
+	SolutionTimeNs int64
 }
 
 // EvaluationReport summarizes the final scoring metrics for a submission run.

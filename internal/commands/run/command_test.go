@@ -1,17 +1,17 @@
 package runcmd
 
 import (
-	"errors"
-	"flag"
+	"bytes"
+	"context"
+	"encoding/json"
+	"io"
 	"strings"
 	"testing"
-)
 
-func TestExecuteHelp(t *testing.T) {
-	if err := Execute([]string{"--help"}); !errors.Is(err, flag.ErrHelp) {
-		t.Fatalf("error = %v, want flag.ErrHelp", err)
-	}
-}
+	runapi "polyglot-rosetta/internal/api/run"
+	"polyglot-rosetta/internal/cli"
+	"polyglot-rosetta/internal/domain/execution"
+)
 
 func TestCommand(t *testing.T) {
 	command := Command()
@@ -23,58 +23,36 @@ func TestCommand(t *testing.T) {
 	}
 }
 
-func TestParseOptions(t *testing.T) {
-	tests := []struct {
+func TestRunCommandJSONOptionErrors(t *testing.T) {
+	for _, test := range []struct {
 		name string
 		args []string
-		want options
+		want string
 	}{
-		{
-			name: "file input with defaults",
-			args: []string{"--concept=hello-world", "--path=main.go"},
-			want: options{concept: "hello-world", path: "main.go", language: defaultLanguage},
-		},
-		{
-			name: "standard input with overrides",
-			args: []string{"--concept=hello-world", "--stdin", "--lang=python", "--all"},
-			want: options{concept: "hello-world", stdin: true, language: "python", all: true},
-		},
-		{
-			name: "inline input",
-			args: []string{"--concept=hello-world", "--code=package main"},
-			want: options{concept: "hello-world", code: "package main", language: defaultLanguage},
-		},
-	}
-
-	for _, test := range tests {
+		{name: "missing ID", args: []string{"--format=json", "--lang=go"}, want: "--id"},
+		{name: "unknown flag before format", args: []string{"--unknown", "--format=json"}, want: "flag provided but not defined"},
+		{name: "separate format value", args: []string{"--lang=go", "--format", "json"}, want: "--id"},
+		{name: "invalid language", args: []string{"--id=c-2b23ca07", "--lang=ruby", "--format=json"}, want: "unsupported language"},
+	} {
 		t.Run(test.name, func(t *testing.T) {
-			got, err := parseOptions("run", test.args)
-			if err != nil {
-				t.Fatalf("parseOptions: %v", err)
+			var stdout, stderr bytes.Buffer
+			err := runCommandWithIO(context.Background(), "prosetta run", test.args, strings.NewReader(""), &stdout)
+			if err == nil || !strings.Contains(err.Error(), test.want) {
+				t.Fatalf("error = %v, want containing %q", err, test.want)
 			}
-			if got != test.want {
-				t.Fatalf("options = %+v, want %+v", got, test.want)
+			if code := cli.ExitCode(err, &stderr); code != 1 || stderr.Len() != 0 {
+				t.Fatalf("exit code = %d, stderr = %q", code, stderr.String())
 			}
-		})
-	}
-}
-
-func TestParseOptionsValidation(t *testing.T) {
-	tests := []struct {
-		name    string
-		args    []string
-		wantErr string
-	}{
-		{name: "missing concept", args: []string{"--path=main.go"}, wantErr: "--concept"},
-		{name: "missing input", args: []string{"--concept=hello-world"}, wantErr: "missing input source"},
-		{name: "positional argument", args: []string{"source.go"}, wantErr: "unexpected argument"},
-	}
-
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			_, err := parseOptions("run", test.args)
-			if err == nil || !strings.Contains(err.Error(), test.wantErr) {
-				t.Fatalf("error = %v, want containing %q", err, test.wantErr)
+			var result runapi.Result
+			decoder := json.NewDecoder(&stdout)
+			if err := decoder.Decode(&result); err != nil {
+				t.Fatalf("decode JSON: %v; output = %q", err, stdout.String())
+			}
+			if err := decoder.Decode(new(any)); err != io.EOF {
+				t.Fatalf("unexpected trailing output: %v", err)
+			}
+			if result.Status != execution.StatusError || !strings.Contains(result.Error, test.want) || result.TestResults == nil {
+				t.Fatalf("result = %+v", result)
 			}
 		})
 	}

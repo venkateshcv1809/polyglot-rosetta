@@ -2,6 +2,7 @@ package execution
 
 import (
 	"os"
+	"path/filepath"
 	"testing"
 )
 
@@ -38,5 +39,19 @@ func TestWorkspaceCreationAndCleanup(t *testing.T) {
 
 	if _, err := os.Stat(ws.Dir); !os.IsNotExist(err) {
 		t.Errorf("workspace directory was not removed after cleanup")
+	}
+}
+
+func TestWorkspaceRejectsPathsOutsideRoot(t *testing.T) {
+	ws, err := NewWorkspace()
+	if err != nil {
+		t.Fatalf("NewWorkspace: %v", err)
+	}
+	t.Cleanup(func() { _ = ws.Cleanup() })
+
+	for _, name := range []string{"", "../outside.go", filepath.Join("nested", "file.go"), "/tmp/file.go"} {
+		if _, err := ws.WriteFile(name, "content"); err == nil {
+			t.Errorf("WriteFile(%q) returned nil error", name)
+		}
 	}
 }
