@@ -5,7 +5,7 @@ import (
 	"os"
 
 	"polyglot-rosetta/internal/cli"
-	"polyglot-rosetta/internal/domain/catalog"
+	"polyglot-rosetta/internal/catalog"
 )
 
 type categoryOptions struct {

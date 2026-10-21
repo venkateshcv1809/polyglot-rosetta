@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"testing"
 
-	"polyglot-rosetta/internal/domain/catalog"
+	"polyglot-rosetta/internal/catalog"
 	"polyglot-rosetta/internal/scaffold"
 )
 

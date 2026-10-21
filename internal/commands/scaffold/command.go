@@ -5,25 +5,11 @@ package scaffoldcmd
 import "polyglot-rosetta/internal/cli"
 
 const (
-	commandName            = "generate"
-	commandSummary         = "Scaffold catalog content."
 	categoryCommandName    = "category"
 	categoryCommandSummary = "Scaffold a category directory and info.json"
 	conceptCommandName     = "concept"
 	conceptCommandSummary  = "Scaffold a concept directory and language templates"
 )
-
-func Command() cli.Command {
-	return cli.Command{
-		Name:        commandName,
-		Summary:     commandSummary,
-		Subcommands: []cli.Command{CategoryCommand(), ConceptCommand()},
-	}
-}
-
-func Execute(args []string) error {
-	return cli.Execute(Command(), args)
-}
 
 func CategoryCommand() cli.Command {
 	return cli.Command{

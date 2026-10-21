@@ -7,7 +7,7 @@ import (
 	"reflect"
 	"testing"
 
-	"polyglot-rosetta/internal/domain/catalog"
+	"polyglot-rosetta/internal/catalog"
 )
 
 func TestRegisterInParentUsesMaximumOrderAndSortsItems(t *testing.T) {

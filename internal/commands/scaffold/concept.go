@@ -5,7 +5,7 @@ import (
 
 	"polyglot-rosetta/internal/cli"
 	"polyglot-rosetta/internal/config"
-	"polyglot-rosetta/internal/domain/catalog"
+	"polyglot-rosetta/internal/catalog"
 	"polyglot-rosetta/internal/scaffold"
 )
 

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"regexp"
 
-	"polyglot-rosetta/internal/domain/catalog"
+	"polyglot-rosetta/internal/catalog"
 )
 
 var slugRegex = regexp.MustCompile(`^[a-z0-9]+(?:-[a-z0-9]+)*$`)

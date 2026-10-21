@@ -3,7 +3,7 @@ package scaffold
 import (
 	"testing"
 
-	"polyglot-rosetta/internal/domain/catalog"
+	"polyglot-rosetta/internal/catalog"
 )
 
 func TestCreateCategoryOptionsValidate(t *testing.T) {

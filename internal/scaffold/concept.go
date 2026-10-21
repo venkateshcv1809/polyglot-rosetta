@@ -6,7 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"polyglot-rosetta/internal/domain/catalog"
+	"polyglot-rosetta/internal/catalog"
 	"polyglot-rosetta/internal/domain/language"
 )
 

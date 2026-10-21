@@ -2,7 +2,7 @@ package scaffoldcmd
 
 import (
 	"polyglot-rosetta/internal/cli"
-	"polyglot-rosetta/internal/domain/catalog"
+	"polyglot-rosetta/internal/catalog"
 )
 
 // CategoryFormSpec defines the prompt order and rules for creating categories.

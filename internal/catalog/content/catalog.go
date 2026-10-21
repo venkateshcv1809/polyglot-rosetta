@@ -11,30 +11,6 @@ import (
 	"polyglot-rosetta/internal/domain/language"
 )
 
-// Load validates metadata and loads exercise content rooted at root.
-func Load(files fs.FS, root string, templates ...fs.FS) (catalog.Catalog, error) {
-	if len(templates) > 1 {
-		return catalog.Catalog{}, fmt.Errorf("expected at most one template filesystem")
-	}
-	var common fs.FS
-	if len(templates) == 1 {
-		common = templates[0]
-	}
-	root = path.Clean(root)
-	if root != "." {
-		var err error
-		files, err = fs.Sub(files, root)
-		if err != nil {
-			return catalog.Catalog{}, fmt.Errorf("open catalog root %q: %w", root, err)
-		}
-	}
-	metadata, err := catalog.LoadMetadata(files)
-	if err != nil {
-		return catalog.Catalog{}, err
-	}
-	return Enrich(metadata, files, common)
-}
-
 // Enrich adds problem text, test cases, solutions, and starters to catalog metadata.
 func Enrich(metadata catalog.Catalog, files, templates fs.FS) (catalog.Catalog, error) {
 	for id, concept := range metadata.ConceptsByID {

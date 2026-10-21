@@ -1,13 +1,14 @@
 package content
 
 import (
+	"io/fs"
 	"testing"
 	"testing/fstest"
 
 	"polyglot-rosetta/internal/catalog"
 )
 
-func TestLoadLocalCatalog(t *testing.T) {
+func TestEnrichLocalCatalog(t *testing.T) {
 	files := fstest.MapFS{
 		"info.json":                                   {Data: []byte(`{"id":"root","title":"Root","items":[{"id":"fundamentals","order":1}]}`)},
 		"fundamentals/info.json":                      {Data: []byte(`{"id":"fundamentals","title":"Fundamentals","items":[{"id":"hello-world","order":1}]}`)},
@@ -18,10 +19,7 @@ func TestLoadLocalCatalog(t *testing.T) {
 	common := fstest.MapFS{
 		"concept/typescript/template.ts": {Data: []byte("practice starter")},
 	}
-	index, err := Load(files, ".", common)
-	if err != nil {
-		t.Fatalf("Load: %v", err)
-	}
+	index := enrichCatalog(t, files, common)
 	id, _ := catalog.ConceptID("fundamentals/hello-world")
 	concept, err := index.ResolveConcept(id)
 	if err != nil || concept.Path != "fundamentals/hello-world" || len(concept.TestCases) != 2 || concept.Solutions["typescript"] == "" || concept.Starters["typescript"] == "" {
@@ -35,7 +33,7 @@ func TestLoadLocalCatalog(t *testing.T) {
 	}
 }
 
-func TestLoadPrefersConceptStarterOverCommonTemplate(t *testing.T) {
+func TestEnrichPrefersConceptStarterOverCommonTemplate(t *testing.T) {
 	files := fstest.MapFS{
 		"info.json":                          {Data: []byte(`{"id":"root","title":"Root","items":[{"id":"one","order":1}]}`)},
 		"one/info.json":                      {Data: []byte(`{"id":"one","title":"One","items":[{"id":"example","order":1}]}`)},
@@ -49,10 +47,7 @@ func TestLoadPrefersConceptStarterOverCommonTemplate(t *testing.T) {
 		"concept/python/template.py":     {Data: []byte("python starter")},
 		"concept/typescript/template.ts": {Data: []byte("typescript starter")},
 	}
-	index, err := Load(files, ".", common)
-	if err != nil {
-		t.Fatalf("Load: %v", err)
-	}
+	index := enrichCatalog(t, files, common)
 	id, _ := catalog.ConceptID("one/example")
 	concept := index.ConceptsByID[id]
 	python, present := concept.Starters["python"]
@@ -61,7 +56,7 @@ func TestLoadPrefersConceptStarterOverCommonTemplate(t *testing.T) {
 	}
 }
 
-func TestLoadAllowsRepeatedLeafIDsAtDifferentPaths(t *testing.T) {
+func TestEnrichAllowsRepeatedLeafIDsAtDifferentPaths(t *testing.T) {
 	files := fstest.MapFS{
 		"info.json":               {Data: []byte(`{"id":"root","title":"Root","items":[{"id":"one","order":1},{"id":"two","order":2}]}`)},
 		"one/info.json":           {Data: []byte(`{"id":"one","title":"One","items":[{"id":"same","order":1}]}`)},
@@ -71,10 +66,7 @@ func TestLoadAllowsRepeatedLeafIDsAtDifferentPaths(t *testing.T) {
 		"two/same/info.json":      {Data: []byte(`{"id":"same","title":"Same","difficulty":"Easy"}`)},
 		"two/same/testcases.json": {Data: []byte(`[{"id":1,"input":{},"expected":true}]`)},
 	}
-	index, err := Load(files, ".")
-	if err != nil {
-		t.Fatalf("Load: %v", err)
-	}
+	index := enrichCatalog(t, files, nil)
 	for _, ref := range []string{"one/same", "two/same"} {
 		id, _ := catalog.ConceptID(ref)
 		concept, err := index.ResolveConcept(id)
@@ -82,4 +74,17 @@ func TestLoadAllowsRepeatedLeafIDsAtDifferentPaths(t *testing.T) {
 			t.Fatalf("ResolveConcept(%q) = %+v, %v", ref, concept, err)
 		}
 	}
+}
+
+func enrichCatalog(t *testing.T, files, templates fs.FS) catalog.Catalog {
+	t.Helper()
+	metadata, err := catalog.LoadMetadata(files)
+	if err != nil {
+		t.Fatalf("LoadMetadata: %v", err)
+	}
+	enriched, err := Enrich(metadata, files, templates)
+	if err != nil {
+		t.Fatalf("Enrich: %v", err)
+	}
+	return enriched
 }

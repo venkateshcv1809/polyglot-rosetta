@@ -6,25 +6,6 @@ import (
 	"polyglot-rosetta/internal/cli"
 )
 
-func TestExecuteHelp(t *testing.T) {
-	if err := Execute([]string{"--help"}); err != nil {
-		t.Fatalf("help returned an error: %v", err)
-	}
-}
-
-func TestCommand(t *testing.T) {
-	command := Command()
-	if command.Name != commandName || command.Summary != commandSummary {
-		t.Fatalf("command = %#v", command)
-	}
-	if len(command.Subcommands) != 2 {
-		t.Fatalf("subcommands = %d, want 2", len(command.Subcommands))
-	}
-	if command.Subcommands[0].Name != categoryCommandName || command.Subcommands[1].Name != conceptCommandName {
-		t.Fatalf("subcommand order = [%q, %q]", command.Subcommands[0].Name, command.Subcommands[1].Name)
-	}
-}
-
 func TestScaffoldSubcommands(t *testing.T) {
 	commands := []struct {
 		name    string
