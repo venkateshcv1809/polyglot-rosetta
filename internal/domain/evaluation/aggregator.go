@@ -1,4 +1,4 @@
-package execution
+package evaluation
 
 import (
 	"polyglot-rosetta/internal/domain/testcase"
@@ -24,7 +24,7 @@ type TestOutcome struct {
 	SolutionTimeNs int64
 }
 
-// EvaluationReport summarizes the final scoring metrics for a submission run.
+// EvaluationReport summarizes scoring metrics for the selected test cases.
 type EvaluationReport struct {
 	Concept      string
 	TotalTests   int

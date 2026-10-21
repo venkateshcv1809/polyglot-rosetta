@@ -10,7 +10,7 @@ import (
 
 	runapi "polyglot-rosetta/internal/api/run"
 	"polyglot-rosetta/internal/cli"
-	"polyglot-rosetta/internal/domain/execution"
+	"polyglot-rosetta/internal/domain/evaluation"
 	"polyglot-rosetta/internal/domain/language"
 	runservice "polyglot-rosetta/internal/run"
 )
@@ -67,7 +67,7 @@ func runWithIO(ctx context.Context, opts options, stdin io.Reader, stdout io.Wri
 		}
 		return runErr
 	}
-	if prepared.result.Status == execution.StatusFailed {
+	if prepared.result.Status == evaluation.StatusFailed {
 		if opts.format == "json" {
 			return cli.ReportedError(errTestsFailed)
 		}

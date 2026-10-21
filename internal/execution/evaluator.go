@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	domainexecution "polyglot-rosetta/internal/domain/execution"
+	domainevaluation "polyglot-rosetta/internal/domain/evaluation"
 	"polyglot-rosetta/internal/domain/testcase"
 )
 
@@ -22,7 +22,7 @@ const (
 
 // Evaluation contains a completed test report and captured process output.
 type Evaluation struct {
-	Report        domainexecution.EvaluationReport
+	Report        domainevaluation.EvaluationReport
 	Duration      time.Duration
 	BuildDuration *time.Duration
 	Stdout        string
@@ -30,12 +30,12 @@ type Evaluation struct {
 }
 
 // EvaluateSuite evaluates a request against an already loaded test suite.
-func EvaluateSuite(ctx context.Context, request domainexecution.Request, suite *testcase.TestSuite) (Evaluation, error) {
+func EvaluateSuite(ctx context.Context, request domainevaluation.Request, suite *testcase.TestSuite) (Evaluation, error) {
 	return EvaluateSuiteWithTimeout(ctx, request, suite, defaultExecutionTimeout)
 }
 
 // EvaluateSuiteWithTimeout evaluates an in-memory suite with a caller-supplied timeout.
-func EvaluateSuiteWithTimeout(ctx context.Context, request domainexecution.Request, suite *testcase.TestSuite, timeout time.Duration) (evaluation Evaluation, err error) {
+func EvaluateSuiteWithTimeout(ctx context.Context, request domainevaluation.Request, suite *testcase.TestSuite, timeout time.Duration) (evaluation Evaluation, err error) {
 	started := time.Now()
 	if timeout <= 0 {
 		return Evaluation{}, fmt.Errorf("execution timeout must be positive")
@@ -79,7 +79,7 @@ func EvaluateSuiteWithTimeout(ctx context.Context, request domainexecution.Reque
 		}
 	}
 
-	outcomes := make([]domainexecution.TestOutcome, 0, len(testCases))
+	outcomes := make([]domainevaluation.TestOutcome, 0, len(testCases))
 	stdout := newTailBuffer(defaultCommandOutputLimit)
 	stderr := newTailBuffer(defaultCommandOutputLimit)
 	for index, testCase := range testCases {
@@ -96,7 +96,7 @@ func EvaluateSuiteWithTimeout(ctx context.Context, request domainexecution.Reque
 
 	selectedSuite := &testcase.TestSuite{Concept: suite.Concept, TestCases: testCases}
 	return Evaluation{
-		Report:        domainexecution.AggregateResults(selectedSuite, outcomes),
+		Report:        domainevaluation.AggregateResults(selectedSuite, outcomes),
 		Duration:      time.Since(started),
 		BuildDuration: buildDuration,
 		Stdout:        stdout.String(),
@@ -104,14 +104,14 @@ func EvaluateSuiteWithTimeout(ctx context.Context, request domainexecution.Reque
 	}, nil
 }
 
-func caseOutcome(testCase testcase.TestCase, index int, result RunResult, marker string) domainexecution.TestOutcome {
-	outcome := domainexecution.TestOutcome{TestCaseID: testCase.ID, Hidden: testCase.Hidden}
+func caseOutcome(testCase testcase.TestCase, index int, result RunResult, marker string) domainevaluation.TestOutcome {
+	outcome := domainevaluation.TestOutcome{TestCaseID: testCase.ID, Hidden: testCase.Hidden}
 	switch {
 	case result.TimedOut:
-		outcome.Status = domainexecution.TestTimeout
+		outcome.Status = domainevaluation.TestTimeout
 		outcome.Message = "solution exceeded the time limit"
 	case result.Error != nil:
-		outcome.Status = domainexecution.TestCrashed
+		outcome.Status = domainevaluation.TestCrashed
 		if result.ExitCode >= 0 {
 			outcome.Message = fmt.Sprintf("solution exited with code %d", result.ExitCode)
 		} else {
@@ -120,15 +120,15 @@ func caseOutcome(testCase testcase.TestCase, index int, result RunResult, marker
 	default:
 		parsed, err := parseCaseOutcome(index, result.Stdout+"\n"+result.Stderr, marker)
 		if err != nil {
-			outcome.Status = domainexecution.TestCrashed
+			outcome.Status = domainevaluation.TestCrashed
 			outcome.Message = "solution exited without a valid result"
 		} else {
 			outcome.Passed = parsed.Passed
 			outcome.SolutionTimeNs = parsed.SolutionTimeNs
 			if parsed.Passed {
-				outcome.Status = domainexecution.TestPassed
+				outcome.Status = domainevaluation.TestPassed
 			} else {
-				outcome.Status = domainexecution.TestWrongAnswer
+				outcome.Status = domainevaluation.TestWrongAnswer
 				outcome.Message = "output did not match the expected value"
 			}
 		}

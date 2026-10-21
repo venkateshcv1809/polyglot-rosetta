@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	runapi "polyglot-rosetta/internal/api/run"
-	"polyglot-rosetta/internal/domain/execution"
+	"polyglot-rosetta/internal/domain/evaluation"
 )
 
 func TestWriteEvaluationText(t *testing.T) {
@@ -15,8 +15,8 @@ func TestWriteEvaluationText(t *testing.T) {
 	buildDurationMs := int64(125)
 	result := runapi.Result{
 		Concept: "fundamentals/hello-world", Language: "go", Mode: runapi.ModePublic,
-		InputSource: "stdin", Status: execution.StatusFailed, TotalFailed: 1, DurationMs: 150, BuildDurationMs: &buildDurationMs,
-		TestResults: []runapi.TestResult{{ID: "case-1", Status: execution.TestWrongAnswer, Hidden: true, Message: "wrong result", SolutionTimeNs: 1200}},
+		InputSource: "stdin", Status: evaluation.StatusFailed, TotalFailed: 1, DurationMs: 150, BuildDurationMs: &buildDurationMs,
+		TestResults: []runapi.TestResult{{ID: "case-1", Status: evaluation.TestWrongAnswer, Hidden: true, Message: "wrong result", SolutionTimeNs: 1200}},
 	}
 	if err := writeResult(&output, "text", result); err != nil {
 		t.Fatal(err)
@@ -37,7 +37,7 @@ func TestWriteEvaluationText(t *testing.T) {
 func TestWriteResultJSON(t *testing.T) {
 	var output bytes.Buffer
 	buildDurationMs := int64(125)
-	result := runapi.Result{ID: "c-12345678", Status: execution.StatusError, Error: "build failed", BuildDurationMs: &buildDurationMs}
+	result := runapi.Result{ID: "c-12345678", Status: evaluation.StatusError, Error: "build failed", BuildDurationMs: &buildDurationMs}
 	if err := writeResult(&output, "json", result); err != nil {
 		t.Fatal(err)
 	}
@@ -53,7 +53,7 @@ func TestWriteResultJSON(t *testing.T) {
 func TestWriteEvaluationOmitsSummaryOnError(t *testing.T) {
 	var output bytes.Buffer
 	if err := writeResult(&output, "text", runapi.Result{
-		Concept: "fundamentals/hello-world", Status: execution.StatusError, Error: "build failed",
+		Concept: "fundamentals/hello-world", Status: evaluation.StatusError, Error: "build failed",
 	}); err != nil {
 		t.Fatal(err)
 	}
@@ -66,8 +66,8 @@ func TestWriteEvaluationPassedText(t *testing.T) {
 	var output bytes.Buffer
 	result := runapi.Result{
 		Concept: "two-sum", Language: "python", Mode: runapi.ModeAll, InputSource: "catalog",
-		Status: execution.StatusPassed, TotalPassed: 1, DurationMs: 42,
-		TestResults: []runapi.TestResult{{ID: "case-1", Status: execution.TestPassed, Passed: true, SolutionTimeNs: 900}},
+		Status: evaluation.StatusPassed, TotalPassed: 1, DurationMs: 42,
+		TestResults: []runapi.TestResult{{ID: "case-1", Status: evaluation.TestPassed, Passed: true, SolutionTimeNs: 900}},
 	}
 	if err := writeResult(&output, "text", result); err != nil {
 		t.Fatal(err)
@@ -85,10 +85,10 @@ func TestWriteEvaluationPassedText(t *testing.T) {
 func TestWriteEvaluationShowsCrashAndTimeoutWithoutSolutionTime(t *testing.T) {
 	var output bytes.Buffer
 	result := runapi.Result{
-		Concept: "two-sum", Status: execution.StatusFailed, TotalFailed: 2,
+		Concept: "two-sum", Status: evaluation.StatusFailed, TotalFailed: 2,
 		TestResults: []runapi.TestResult{
-			{ID: "crash", Status: execution.TestCrashed, Message: "solution exited with code 2"},
-			{ID: "timeout", Status: execution.TestTimeout, Message: "solution exceeded the time limit"},
+			{ID: "crash", Status: evaluation.TestCrashed, Message: "solution exited with code 2"},
+			{ID: "timeout", Status: evaluation.TestTimeout, Message: "solution exceeded the time limit"},
 		},
 	}
 	if err := writeResult(&output, "text", result); err != nil {
@@ -107,10 +107,10 @@ func TestWriteEvaluationShowsCrashAndTimeoutWithoutSolutionTime(t *testing.T) {
 func TestResultTableAlignsVariableWidthCells(t *testing.T) {
 	var output bytes.Buffer
 	result := runapi.Result{
-		Concept: "two-sum", Status: execution.StatusFailed, TotalPassed: 1, TotalFailed: 1,
+		Concept: "two-sum", Status: evaluation.StatusFailed, TotalPassed: 1, TotalFailed: 1,
 		TestResults: []runapi.TestResult{
-			{ID: "1", Status: execution.TestPassed, Passed: true, SolutionTimeNs: 200},
-			{ID: "long-case-identifier", Hidden: true, Status: execution.TestCrashed, Message: "solution exited with code 2"},
+			{ID: "1", Status: evaluation.TestPassed, Passed: true, SolutionTimeNs: 200},
+			{ID: "long-case-identifier", Hidden: true, Status: evaluation.TestCrashed, Message: "solution exited with code 2"},
 		},
 	}
 	if err := writeResult(&output, "text", result); err != nil {

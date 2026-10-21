@@ -9,7 +9,7 @@ import (
 	runapi "polyglot-rosetta/internal/api/run"
 	"polyglot-rosetta/internal/catalog"
 	catalogcontent "polyglot-rosetta/internal/catalog/content"
-	"polyglot-rosetta/internal/domain/execution"
+	"polyglot-rosetta/internal/domain/evaluation"
 	"polyglot-rosetta/internal/domain/language"
 	engine "polyglot-rosetta/internal/execution"
 )
@@ -37,7 +37,7 @@ func Evaluate(ctx context.Context, request runapi.Request, concept Concept) (eng
 	if err != nil {
 		return engine.Evaluation{}, err
 	}
-	return engine.EvaluateSuite(ctx, execution.Request{
+	return engine.EvaluateSuite(ctx, evaluation.Request{
 		Language: lang, SourceCode: request.Source,
 		IsSubmit: request.Mode == runapi.ModeAll,
 	}, suite)

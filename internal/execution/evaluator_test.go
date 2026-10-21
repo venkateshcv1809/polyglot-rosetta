@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	domainexecution "polyglot-rosetta/internal/domain/execution"
+	domainevaluation "polyglot-rosetta/internal/domain/evaluation"
 	"polyglot-rosetta/internal/domain/language"
 	"polyglot-rosetta/internal/domain/testcase"
 )
@@ -22,7 +22,7 @@ type Solution struct{}
 func (Solution) Solve(input any) any { return "Hello " + input.(map[string]any)["name"].(string) }
 `
 
-	evaluation, err := EvaluateSuite(context.Background(), domainexecution.Request{
+	evaluation, err := EvaluateSuite(context.Background(), domainevaluation.Request{
 		Language: language.Go, SourceCode: source,
 	}, suite)
 	if err != nil {
@@ -43,7 +43,7 @@ func TestEvaluateSuiteUsesInMemoryTestCases(t *testing.T) {
 	suite := &testcase.TestSuite{Concept: "embedded", TestCases: []testcase.TestCase{{
 		ID: "one", Input: map[string]any{"name": "World"}, Expected: "Hello World",
 	}}}
-	evaluation, err := EvaluateSuite(context.Background(), domainexecution.Request{
+	evaluation, err := EvaluateSuite(context.Background(), domainevaluation.Request{
 		Language:   language.Python,
 		SourceCode: "class Solution:\n    def solve(self, input_data):\n        return 'Hello ' + input_data['name']\n",
 	}, suite)
@@ -65,7 +65,7 @@ func TestEvaluatePythonIncludesHiddenCases(t *testing.T) {
 	suite := evaluationSuite()
 	source := "class Solution:\n    def solve(self, input_data):\n        return 'Hello ' + input_data['name']\n"
 
-	evaluation, err := EvaluateSuite(context.Background(), domainexecution.Request{
+	evaluation, err := EvaluateSuite(context.Background(), domainevaluation.Request{
 		Language: language.Python, SourceCode: source, IsSubmit: true,
 	}, suite)
 	if err != nil {
@@ -84,7 +84,7 @@ func TestEvaluateReportsPerTestSolutionTime(t *testing.T) {
 		{ID: "slow", Input: map[string]any{"value": "slow"}, Expected: "slow"},
 		{ID: "fast", Input: map[string]any{"value": "fast"}, Expected: "fast"},
 	}}
-	evaluation, err := EvaluateSuite(context.Background(), domainexecution.Request{
+	evaluation, err := EvaluateSuite(context.Background(), domainevaluation.Request{
 		Language:   language.Python,
 		SourceCode: "import time\nclass Solution:\n    def solve(self, data):\n        if data['value'] == 'slow':\n            time.sleep(0.1)\n        return data['value']\n",
 	}, suite)
@@ -138,15 +138,15 @@ func TestEvaluateIsolatesEachCase(t *testing.T) {
 					t.Skipf("%s is unavailable", binary)
 				}
 			}
-			evaluation, err := EvaluateSuite(context.Background(), domainexecution.Request{
+			evaluation, err := EvaluateSuite(context.Background(), domainevaluation.Request{
 				Language: test.language, SourceCode: test.sourceCode,
 			}, suite)
 			if err != nil {
 				t.Fatalf("EvaluateSuite: %v", err)
 			}
 			if !evaluation.Report.PassedAll || len(evaluation.Report.Outcomes) != 2 ||
-				evaluation.Report.Outcomes[0].Status != domainexecution.TestPassed ||
-				evaluation.Report.Outcomes[1].Status != domainexecution.TestPassed {
+				evaluation.Report.Outcomes[0].Status != domainevaluation.TestPassed ||
+				evaluation.Report.Outcomes[1].Status != domainevaluation.TestPassed {
 				t.Fatalf("report = %+v", evaluation.Report)
 			}
 		})
@@ -191,7 +191,7 @@ func TestEvaluateContinuesAfterCrashForEveryLanguage(t *testing.T) {
 					t.Skipf("%s is unavailable", binary)
 				}
 			}
-			evaluation, err := EvaluateSuite(context.Background(), domainexecution.Request{
+			evaluation, err := EvaluateSuite(context.Background(), domainevaluation.Request{
 				Language: test.language, SourceCode: test.sourceCode, IsSubmit: true,
 			}, suite)
 			if err != nil {
@@ -199,8 +199,8 @@ func TestEvaluateContinuesAfterCrashForEveryLanguage(t *testing.T) {
 			}
 			outcomes := evaluation.Report.Outcomes
 			if evaluation.Report.PassedAll || evaluation.Report.PassedTests != 1 || len(outcomes) != 2 ||
-				outcomes[0].Status != domainexecution.TestCrashed || outcomes[0].Message == "" ||
-				outcomes[1].Status != domainexecution.TestPassed || outcomes[1].SolutionTimeNs <= 0 {
+				outcomes[0].Status != domainevaluation.TestCrashed || outcomes[0].Message == "" ||
+				outcomes[1].Status != domainevaluation.TestPassed || outcomes[1].SolutionTimeNs <= 0 {
 				t.Fatalf("report = %+v", evaluation.Report)
 			}
 		})
@@ -215,15 +215,15 @@ func TestEvaluateContinuesAfterWrongAnswer(t *testing.T) {
 		{ID: "wrong", Input: map[string]any{"wrong": true}, Expected: "ok"},
 		{ID: "next", Input: map[string]any{"wrong": false}, Expected: "ok"},
 	}}
-	evaluation, err := EvaluateSuite(context.Background(), domainexecution.Request{
+	evaluation, err := EvaluateSuite(context.Background(), domainevaluation.Request{
 		Language: language.Go, SourceCode: "package main\ntype Solution struct{}\nfunc (Solution) Solve(input any) any { if input.(map[string]any)[\"wrong\"] == true { return \"wrong\" }; return \"ok\" }\n",
 	}, suite)
 	if err != nil {
 		t.Fatalf("EvaluateSuite: %v", err)
 	}
 	if evaluation.Report.PassedTests != 1 ||
-		evaluation.Report.Outcomes[0].Status != domainexecution.TestWrongAnswer ||
-		evaluation.Report.Outcomes[1].Status != domainexecution.TestPassed {
+		evaluation.Report.Outcomes[0].Status != domainevaluation.TestWrongAnswer ||
+		evaluation.Report.Outcomes[1].Status != domainevaluation.TestPassed {
 		t.Fatalf("report = %+v", evaluation.Report)
 	}
 }
@@ -236,7 +236,7 @@ func TestEvaluateContinuesAfterEarlyExit(t *testing.T) {
 		{ID: "exit", Input: map[string]any{"exit": true}, Expected: "ok"},
 		{ID: "next", Input: map[string]any{"exit": false}, Expected: "ok"},
 	}}
-	evaluation, err := EvaluateSuite(context.Background(), domainexecution.Request{
+	evaluation, err := EvaluateSuite(context.Background(), domainevaluation.Request{
 		Language:   language.Go,
 		SourceCode: "package main\nimport \"os\"\ntype Solution struct{}\nfunc (Solution) Solve(input any) any { if input.(map[string]any)[\"exit\"] == true { os.Exit(0) }; return \"ok\" }\n",
 	}, suite)
@@ -244,8 +244,8 @@ func TestEvaluateContinuesAfterEarlyExit(t *testing.T) {
 		t.Fatalf("EvaluateSuite: %v", err)
 	}
 	if evaluation.Report.PassedTests != 1 ||
-		evaluation.Report.Outcomes[0].Status != domainexecution.TestCrashed ||
-		evaluation.Report.Outcomes[1].Status != domainexecution.TestPassed {
+		evaluation.Report.Outcomes[0].Status != domainevaluation.TestCrashed ||
+		evaluation.Report.Outcomes[1].Status != domainevaluation.TestPassed {
 		t.Fatalf("report = %+v", evaluation.Report)
 	}
 }
@@ -291,7 +291,7 @@ pub const Solution = struct { pub fn solve(allocator: std.mem.Allocator, _: std.
 					t.Skipf("%s is unavailable", binary)
 				}
 			}
-			evaluation, err := EvaluateSuite(context.Background(), domainexecution.Request{
+			evaluation, err := EvaluateSuite(context.Background(), domainevaluation.Request{
 				Language: test.language, SourceCode: test.sourceCode,
 			}, suite)
 			if err != nil {
@@ -311,7 +311,7 @@ func TestEvaluateReturnsFailedReportForWrongAnswer(t *testing.T) {
 	if _, err := exec.LookPath("go"); err != nil {
 		t.Skip("go toolchain is unavailable")
 	}
-	evaluation, err := EvaluateSuite(context.Background(), domainexecution.Request{
+	evaluation, err := EvaluateSuite(context.Background(), domainevaluation.Request{
 		Language:   language.Go,
 		SourceCode: "package main\ntype Solution struct{}\nfunc (Solution) Solve(any) any { return \"wrong\" }\n",
 	}, evaluationSuite())
@@ -327,7 +327,7 @@ func TestEvaluateReportsCompileFailure(t *testing.T) {
 	if _, err := exec.LookPath("go"); err != nil {
 		t.Skip("go toolchain is unavailable")
 	}
-	_, err := EvaluateSuite(context.Background(), domainexecution.Request{
+	_, err := EvaluateSuite(context.Background(), domainevaluation.Request{
 		Language: language.Go, SourceCode: "not go source",
 	}, evaluationSuite())
 	if err == nil || !strings.Contains(err.Error(), `build command "go" failed`) {
@@ -336,7 +336,7 @@ func TestEvaluateReportsCompileFailure(t *testing.T) {
 }
 
 func TestEvaluateRejectsNonPositiveTimeout(t *testing.T) {
-	_, err := EvaluateSuiteWithTimeout(context.Background(), domainexecution.Request{}, evaluationSuite(), 0)
+	_, err := EvaluateSuiteWithTimeout(context.Background(), domainevaluation.Request{}, evaluationSuite(), 0)
 	if err == nil || !strings.Contains(err.Error(), "timeout") {
 		t.Fatalf("error = %v", err)
 	}
@@ -364,15 +364,15 @@ func TestEvaluateTimesOut(t *testing.T) {
 		{ID: "slow", Input: map[string]any{"slow": true}, Expected: "ok"},
 		{ID: "next", Input: map[string]any{"slow": false}, Expected: "ok"},
 	}}
-	evaluation, err := EvaluateSuiteWithTimeout(context.Background(), domainexecution.Request{
+	evaluation, err := EvaluateSuiteWithTimeout(context.Background(), domainevaluation.Request{
 		Language:   language.Python,
 		SourceCode: "import time\nclass Solution:\n    def solve(self, data):\n        if data['slow']: time.sleep(0.3)\n        return 'ok'\n",
 	}, suite, 100*time.Millisecond)
 	if err != nil {
 		t.Fatalf("EvaluateSuiteWithTimeout: %v", err)
 	}
-	if evaluation.Report.PassedAll || evaluation.Report.Outcomes[0].Status != domainexecution.TestTimeout ||
-		evaluation.Report.Outcomes[1].Status != domainexecution.TestPassed {
+	if evaluation.Report.PassedAll || evaluation.Report.Outcomes[0].Status != domainevaluation.TestTimeout ||
+		evaluation.Report.Outcomes[1].Status != domainevaluation.TestPassed {
 		t.Fatalf("report = %+v", evaluation.Report)
 	}
 }

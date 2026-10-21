@@ -10,7 +10,7 @@ import (
 
 	runapi "polyglot-rosetta/internal/api/run"
 	"polyglot-rosetta/internal/cli"
-	"polyglot-rosetta/internal/domain/execution"
+	"polyglot-rosetta/internal/domain/evaluation"
 )
 
 func TestCommand(t *testing.T) {
@@ -51,7 +51,7 @@ func TestRunCommandJSONOptionErrors(t *testing.T) {
 			if err := decoder.Decode(new(any)); err != io.EOF {
 				t.Fatalf("unexpected trailing output: %v", err)
 			}
-			if result.Status != execution.StatusError || !strings.Contains(result.Error, test.want) || result.TestResults == nil {
+			if result.Status != evaluation.StatusError || !strings.Contains(result.Error, test.want) || result.TestResults == nil {
 				t.Fatalf("result = %+v", result)
 			}
 		})

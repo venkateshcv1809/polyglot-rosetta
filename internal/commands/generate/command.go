@@ -14,7 +14,6 @@ const (
 	commandSummary = "Scaffold, list, and package local catalog content."
 )
 
-// Command returns the maintainer command group and its subcommands.
 func Command() cli.Command {
 	return cli.Command{
 		Name:    commandName,
@@ -28,7 +27,6 @@ func Command() cli.Command {
 	}
 }
 
-// Execute runs the maintainer command group.
 func Execute(args []string) error {
 	return cli.Execute(Command(), args)
 }

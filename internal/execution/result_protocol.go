@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"strings"
 
-	domainexecution "polyglot-rosetta/internal/domain/execution"
+	domainevaluation "polyglot-rosetta/internal/domain/evaluation"
 )
 
 func newResultMarker() (string, error) {
@@ -18,8 +18,8 @@ func newResultMarker() (string, error) {
 	return "__PROSETTA_RESULT_" + hex.EncodeToString(token[:]) + "__", nil
 }
 
-func parseCaseOutcome(index int, output, marker string) (domainexecution.TestOutcome, error) {
-	var outcome domainexecution.TestOutcome
+func parseCaseOutcome(index int, output, marker string) (domainevaluation.TestOutcome, error) {
+	var outcome domainevaluation.TestOutcome
 	found := false
 	for _, outputLine := range strings.Split(output, "\n") {
 		line := strings.TrimSpace(outputLine)

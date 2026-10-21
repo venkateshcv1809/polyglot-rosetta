@@ -11,7 +11,7 @@ import (
 	"unicode/utf8"
 
 	runapi "polyglot-rosetta/internal/api/run"
-	"polyglot-rosetta/internal/domain/execution"
+	"polyglot-rosetta/internal/domain/evaluation"
 )
 
 //go:embed output/*.tmpl
@@ -69,7 +69,7 @@ func writeEvaluationEnd(output io.Writer, result runapi.Result) error {
 		view.BuildDuration = &buildDuration
 	}
 	view.Status = "\033[32m[ PASSED ]\033[0m"
-	if result.Status != execution.StatusPassed {
+	if result.Status != evaluation.StatusPassed {
 		view.Status = "\033[31m[ FAILED ]\033[0m"
 	}
 	if view.Total > 0 {
@@ -81,11 +81,11 @@ func writeEvaluationEnd(output io.Writer, result runapi.Result) error {
 			Solution: time.Duration(test.SolutionTimeNs).String(), Reason: test.Message,
 		}
 		switch test.Status {
-		case execution.TestCrashed:
+		case evaluation.TestCrashed:
 			entry.Status, entry.Color, entry.Solution = "[ CRASH ]", "\033[31m", "-"
-		case execution.TestTimeout:
+		case evaluation.TestTimeout:
 			entry.Status, entry.Color, entry.Solution = "[ TIMEOUT ]", "\033[33m", "-"
-		case execution.TestWrongAnswer:
+		case evaluation.TestWrongAnswer:
 			entry.Status, entry.Color = "[ FAIL ]", "\033[31m"
 		default:
 			if !test.Passed {

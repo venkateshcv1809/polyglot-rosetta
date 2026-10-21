@@ -14,7 +14,7 @@ import (
 	runapi "polyglot-rosetta/internal/api/run"
 	"polyglot-rosetta/internal/catalog"
 	"polyglot-rosetta/internal/cli"
-	"polyglot-rosetta/internal/domain/execution"
+	"polyglot-rosetta/internal/domain/evaluation"
 	"polyglot-rosetta/internal/toolchain"
 )
 
@@ -104,7 +104,7 @@ func TestRunStopsBeforeExecutionWhenToolchainIsCachedUnavailable(t *testing.T) {
 	}
 	var result runapi.Result
 	if decodeErr := json.Unmarshal(output.Bytes(), &result); decodeErr != nil ||
-		result.Status != execution.StatusError || !strings.Contains(result.Error, "language toolchain unavailable") {
+		result.Status != evaluation.StatusError || !strings.Contains(result.Error, "language toolchain unavailable") {
 		t.Fatalf("JSON result = %+v, decode error = %v", result, decodeErr)
 	}
 }
@@ -211,23 +211,23 @@ func TestRunJSONOutput(t *testing.T) {
 	for _, test := range []struct {
 		name       string
 		code       string
-		wantStatus execution.Status
-		wantCase   execution.TestStatus
+		wantStatus evaluation.Status
+		wantCase   evaluation.TestStatus
 		wantError  bool
 	}{
 		{name: "passed", code: `package main
 type Solution struct{}
 func (Solution) Solve(input any) any { return "Hello " + input.(map[string]any)["name"].(string) }
-`, wantStatus: execution.StatusPassed, wantCase: execution.TestPassed},
+`, wantStatus: evaluation.StatusPassed, wantCase: evaluation.TestPassed},
 		{name: "failed", code: `package main
 type Solution struct{}
 func (Solution) Solve(any) any { return "wrong" }
-`, wantStatus: execution.StatusFailed, wantCase: execution.TestWrongAnswer, wantError: true},
+`, wantStatus: evaluation.StatusFailed, wantCase: evaluation.TestWrongAnswer, wantError: true},
 		{name: "crashed", code: `package main
 type Solution struct{}
 func (Solution) Solve(any) any { panic("boom") }
-`, wantStatus: execution.StatusFailed, wantCase: execution.TestCrashed, wantError: true},
-		{name: "execution error", code: "not valid Go", wantStatus: execution.StatusError, wantError: true},
+`, wantStatus: evaluation.StatusFailed, wantCase: evaluation.TestCrashed, wantError: true},
+		{name: "execution error", code: "not valid Go", wantStatus: evaluation.StatusError, wantError: true},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			var output bytes.Buffer
@@ -248,7 +248,7 @@ func (Solution) Solve(any) any { panic("boom") }
 			if result.ID != id || result.Concept != "fundamentals/hello-world" || result.Language != "go" || result.Mode != runapi.ModePublic || result.InputSource != "inline" || result.Status != test.wantStatus {
 				t.Fatalf("result = %+v", result)
 			}
-			if test.wantStatus == execution.StatusError {
+			if test.wantStatus == evaluation.StatusError {
 				if result.Error == "" || len(result.TestResults) != 0 {
 					t.Fatalf("error result = %+v", result)
 				}
@@ -256,13 +256,13 @@ func (Solution) Solve(any) any { panic("boom") }
 			}
 			if result.TotalPassed+result.TotalFailed != 1 || len(result.TestResults) != 1 ||
 				result.TestResults[0].Status != test.wantCase ||
-				result.TestResults[0].Passed != (test.wantStatus == execution.StatusPassed) {
+				result.TestResults[0].Passed != (test.wantStatus == evaluation.StatusPassed) {
 				t.Fatalf("test results = %+v", result)
 			}
-			if test.wantCase != execution.TestCrashed && result.TestResults[0].SolutionTimeNs <= 0 {
+			if test.wantCase != evaluation.TestCrashed && result.TestResults[0].SolutionTimeNs <= 0 {
 				t.Fatalf("missing per-test solution time: %+v", result.TestResults[0])
 			}
-			if test.wantCase == execution.TestCrashed && (result.TestResults[0].SolutionTimeNs != 0 || result.TestResults[0].Message == "") {
+			if test.wantCase == evaluation.TestCrashed && (result.TestResults[0].SolutionTimeNs != 0 || result.TestResults[0].Message == "") {
 				t.Fatalf("crash result = %+v", result.TestResults[0])
 			}
 			if result.Error != "" {
@@ -294,7 +294,7 @@ func (Solution) Solve(input any) any { return "Hello " + input.(map[string]any)[
 	if err := json.Unmarshal(output.Bytes(), &result); err != nil {
 		t.Fatalf("decode JSON: %v; output = %q", err, output.String())
 	}
-	if result.ID != id || result.InputSource != "stdin" || result.Mode != runapi.ModeAll || result.Status != execution.StatusPassed {
+	if result.ID != id || result.InputSource != "stdin" || result.Mode != runapi.ModeAll || result.Status != evaluation.StatusPassed {
 		t.Fatalf("result = %+v", result)
 	}
 }
@@ -314,7 +314,7 @@ func TestRunJSONReportsPreparationError(t *testing.T) {
 	if err := json.Unmarshal(output.Bytes(), &result); err != nil {
 		t.Fatalf("decode JSON: %v; output = %q", err, output.String())
 	}
-	if result.Status != execution.StatusError ||
+	if result.Status != evaluation.StatusError ||
 		!strings.Contains(result.Error, "no catalog is available") ||
 		!strings.Contains(result.Error, "prosetta catalog --url") {
 		t.Fatalf("result = %+v", result)
@@ -337,7 +337,7 @@ func TestRunCommandJSONExecutionErrorHasNoTextFailure(t *testing.T) {
 	if err := json.Unmarshal(stdout.Bytes(), &result); err != nil {
 		t.Fatalf("decode JSON: %v; output = %q", err, stdout.String())
 	}
-	if result.Status != execution.StatusError || !strings.Contains(result.Error, "no catalog is available") {
+	if result.Status != evaluation.StatusError || !strings.Contains(result.Error, "no catalog is available") {
 		t.Fatalf("result = %+v", result)
 	}
 }

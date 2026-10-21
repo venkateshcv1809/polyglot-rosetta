@@ -1,4 +1,4 @@
-package execution
+package evaluation
 
 import (
 	"polyglot-rosetta/internal/domain/language"
@@ -18,7 +18,7 @@ const (
 	StatusTimeout Status = "timeout"
 )
 
-// Request contains the native execution inputs for one solution.
+// Request contains the source and language inputs for one evaluation.
 type Request struct {
 	Language   language.Language `json:"language"`
 	SourceCode string            `json:"source_code"`
