@@ -9,6 +9,7 @@ import (
 	catalogcmd "polyglot-rosetta/internal/commands/catalog"
 	probecmd "polyglot-rosetta/internal/commands/probe"
 	runcmd "polyglot-rosetta/internal/commands/run"
+	versioncmd "polyglot-rosetta/internal/commands/version"
 )
 
 func main() {
@@ -23,6 +24,7 @@ func execute(args []string) error {
 			catalogcmd.Command(),
 			probecmd.Command(),
 			runcmd.Command(),
+			versioncmd.Command(),
 		},
 	}, args)
 }

@@ -37,7 +37,7 @@ func TestExecute_PublicSurface(t *testing.T) {
 	if err := execute([]string{"catalog", "--help"}); !errors.Is(err, flag.ErrHelp) {
 		t.Fatalf("catalog help: %v", err)
 	}
-	for _, name := range []string{"probe", "run"} {
+	for _, name := range []string{"probe", "run", "version"} {
 		if err := execute([]string{name, "--help"}); !errors.Is(err, flag.ErrHelp) {
 			t.Errorf("%s help: %v", name, err)
 		}
