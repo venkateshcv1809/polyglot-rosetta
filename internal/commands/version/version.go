@@ -19,5 +19,5 @@ func versionCommandWithIO(commandPath string, args []string, output io.Writer) e
 		}
 		return cli.ReportJSON(output, errorResult(err), err)
 	}
-	return writeResult(output, opts.format, versionResult())
+	return writeResult(output, opts.format, Version())
 }
