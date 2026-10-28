@@ -1,7 +1,8 @@
 // Package probe defines the structured outcome of a local toolchain probe.
 package probe
 
-// Status identifies the overall outcome of a probe request.
+import "polyglot-rosetta/internal/api"
+
 type Status string
 
 const (
@@ -17,9 +18,15 @@ const (
 
 // Result records the availability of the requested language toolchains.
 type Result struct {
-	Status     Status      `json:"status"`
-	Toolchains []Toolchain `json:"toolchains"`
-	Error      string      `json:"error,omitempty"`
+	SchemaVersion int         `json:"schema_version"`
+	Status        Status      `json:"status"`
+	Toolchains    []Toolchain `json:"toolchains"`
+	Error         string      `json:"error,omitempty"`
+}
+
+// NewResult starts a probe result on the current JSON contract.
+func NewResult(status Status) Result {
+	return Result{SchemaVersion: api.SchemaVersion, Status: status, Toolchains: []Toolchain{}}
 }
 
 // Toolchain records the tools required by one language.

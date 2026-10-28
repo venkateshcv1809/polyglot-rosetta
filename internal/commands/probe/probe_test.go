@@ -34,7 +34,7 @@ func TestProbeCommandJSONSuccess(t *testing.T) {
 		len(result.Toolchains[0].Tools) != 1 || result.Toolchains[0].Tools[0].Version != "go 1.0" {
 		t.Fatalf("result = %+v", result)
 	}
-	if err := toolchain.RequireAvailable(cachePath, language.Go, func(string) (string, error) {
+	if err := toolchain.EnsureAvailable(cachePath, language.Go, func(string) (string, error) {
 		t.Fatal("manual probe was not cached")
 		return "", nil
 	}, func(string, string) (string, error) {
@@ -43,7 +43,7 @@ func TestProbeCommandJSONSuccess(t *testing.T) {
 	}); err != nil {
 		t.Fatalf("read probe cache: %v", err)
 	}
-	if err := toolchain.RequireAvailable(cachePath, language.TypeScript, func(string) (string, error) {
+	if err := toolchain.EnsureAvailable(cachePath, language.TypeScript, func(string) (string, error) {
 		t.Fatal("selected-language probe did not cache all languages")
 		return "", nil
 	}, func(string, string) (string, error) {
@@ -72,7 +72,7 @@ func TestProbeCommandJSONUnavailable(t *testing.T) {
 		result.Toolchains[0].Tools[0].Error != "not found" {
 		t.Fatalf("result = %+v", result)
 	}
-	if err := toolchain.RequireAvailable(cachePath, language.Go, func(string) (string, error) {
+	if err := toolchain.EnsureAvailable(cachePath, language.Go, func(string) (string, error) {
 		t.Fatal("cached unavailable result performed lookup")
 		return "", nil
 	}, func(string, string) (string, error) {

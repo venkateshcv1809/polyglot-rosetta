@@ -30,7 +30,7 @@ func Evaluate(ctx context.Context, request runapi.Request, concept Concept) (eng
 	if err != nil {
 		return engine.Evaluation{}, err
 	}
-	if err := RequireToolchain(lang); err != nil {
+	if err := EnsureAvailable(lang); err != nil {
 		return engine.Evaluation{}, err
 	}
 	suite, err := catalogcontent.LoadTestSuite(os.DirFS(concept.root), concept.Reference)

@@ -46,7 +46,7 @@ func runCommandWithIO(ctx context.Context, commandPath string, args []string, st
 func runWithIO(ctx context.Context, opts options, stdin io.Reader, stdout io.Writer) error {
 	prepared, runErr := prepareRun(opts, stdin)
 	if runErr == nil {
-		runErr = runservice.RequireToolchain(language.Language(opts.language))
+		runErr = runservice.EnsureAvailable(language.Language(opts.language))
 	}
 	if runErr == nil {
 		evaluation, err := runservice.Evaluate(ctx, prepared.request, prepared.concept)

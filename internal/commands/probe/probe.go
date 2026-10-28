@@ -8,7 +8,6 @@ import (
 
 	probeapi "polyglot-rosetta/internal/api/probe"
 	"polyglot-rosetta/internal/cli"
-	"polyglot-rosetta/internal/domain/language"
 	"polyglot-rosetta/internal/toolchain"
 )
 
@@ -21,14 +20,10 @@ func probeCommand(commandPath string, args []string) error {
 func probeCommandWithIO(commandPath string, args []string, output io.Writer, lookPath func(string) (string, error), inspect func(string, string) (string, error)) error {
 	opts, err := parseOptionsWithOutput(commandPath, args, output)
 	if err != nil {
-		if !requestsJSON(args) {
+		if !cli.RequestsJSON(args) {
 			return err
 		}
-		result := probeapi.Result{Status: probeapi.StatusError, Toolchains: []probeapi.Toolchain{}, Error: err.Error()}
-		if writeErr := writeResult(output, "json", result); writeErr != nil {
-			return writeErr
-		}
-		return cli.ReportedError(err)
+		return cli.ReportJSON(output, errorResult(err), err)
 	}
 	return probeWithInspector(opts, output, lookPath, inspect)
 }
@@ -39,8 +34,7 @@ func probeWithInspector(opts options, output io.Writer, lookPath func(string) (s
 		if opts.clear && opts.format != "json" {
 			return cli.CommandFailure("Toolchain cache not cleared", err)
 		}
-		result := probeapi.Result{Status: probeapi.StatusError, Toolchains: []probeapi.Toolchain{}, Error: err.Error()}
-		if writeErr := writeResult(output, opts.format, result); writeErr != nil {
+		if writeErr := writeResult(output, opts.format, errorResult(err)); writeErr != nil {
 			return writeErr
 		}
 		if opts.format == "json" {
@@ -49,38 +43,22 @@ func probeWithInspector(opts options, output io.Writer, lookPath func(string) (s
 		return cli.CommandFailure("Toolchain cache not updated", err)
 	}
 	if opts.clear {
-		if err := toolchain.ClearCache(cachePath); err != nil {
+		result := ClearCache(NativeHost{CachePath: cachePath})
+		if result.Status == probeapi.StatusError {
+			err := errors.New(result.Error)
 			if opts.format != "json" {
 				return cli.CommandFailure("Toolchain cache not cleared", err)
 			}
-			result := probeapi.Result{Status: probeapi.StatusError, Toolchains: []probeapi.Toolchain{}, Error: err.Error()}
-			if writeErr := writeResult(output, opts.format, result); writeErr != nil {
-				return writeErr
-			}
-			return cli.ReportedError(err)
+			return cli.ReportJSON(output, result, err)
 		}
-		return writeResult(output, opts.format, probeapi.Result{Status: probeapi.StatusCleared, Toolchains: []probeapi.Toolchain{}})
+		return writeResult(output, opts.format, result)
 	}
-	results, refreshErr := toolchain.RefreshCache(cachePath, lookPath, inspect)
-	if opts.language != "" {
-		selected := make([]toolchain.Result, 0, 1)
-		for _, item := range results {
-			if item.Language == language.Language(opts.language) {
-				selected = append(selected, item)
-				break
-			}
-		}
-		results = selected
-	}
-	result := resultFromToolchain(results)
-	if refreshErr != nil {
-		result.Status = probeapi.StatusError
-		result.Error = refreshErr.Error()
-	}
+	result := Probe(opts.language, NativeHost{CachePath: cachePath, LookPath: lookPath, Inspect: inspect})
 	if err := writeResult(output, opts.format, result); err != nil {
 		return err
 	}
-	if refreshErr != nil {
+	if result.Status == probeapi.StatusError {
+		refreshErr := errors.New(result.Error)
 		if opts.format == "json" {
 			return cli.ReportedError(refreshErr)
 		}

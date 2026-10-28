@@ -10,10 +10,11 @@ import (
 	"strings"
 	"testing"
 
+	probeapi "polyglot-rosetta/internal/api/probe"
 	"polyglot-rosetta/internal/domain/language"
 )
 
-func TestRequireAvailableProbesOnlyOnCacheMiss(t *testing.T) {
+func TestEnsureAvailableProbesOnlyOnCacheMiss(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "toolchains.json")
 	var lookedUp []string
 	lookup := func(binary string) (string, error) {
@@ -21,13 +22,13 @@ func TestRequireAvailableProbesOnlyOnCacheMiss(t *testing.T) {
 		return "/tools/" + binary, nil
 	}
 	inspect := func(binary, path string) (string, error) { return binary + " 1.0", nil }
-	if err := RequireAvailable(path, language.Go, lookup, inspect); err != nil {
+	if err := EnsureAvailable(path, language.Go, lookup, inspect); err != nil {
 		t.Fatalf("first require: %v", err)
 	}
 	if !slices.Equal(lookedUp, []string{"go", "python3", "rustc", "tsc", "node", "zig"}) {
 		t.Fatalf("lookups = %q, want complete probe", lookedUp)
 	}
-	if err := RequireAvailable(path, language.Go, func(string) (string, error) {
+	if err := EnsureAvailable(path, language.Go, func(string) (string, error) {
 		t.Fatal("cache hit performed lookup")
 		return "", nil
 	}, func(string, string) (string, error) {
@@ -36,7 +37,7 @@ func TestRequireAvailableProbesOnlyOnCacheMiss(t *testing.T) {
 	}); err != nil {
 		t.Fatalf("cached require: %v", err)
 	}
-	if err := RequireAvailable(path, language.TypeScript, func(string) (string, error) {
+	if err := EnsureAvailable(path, language.TypeScript, func(string) (string, error) {
 		t.Fatal("complete cache miss for TypeScript")
 		return "", nil
 	}, func(string, string) (string, error) {
@@ -58,10 +59,10 @@ func TestCachedUnavailableRequiresManualRefresh(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "toolchains.json")
 	missing := func(string) (string, error) { return "", errors.New("not found") }
 	inspect := func(string, string) (string, error) { t.Fatal("unexpected inspect"); return "", nil }
-	if err := RequireAvailable(path, language.Go, missing, inspect); !errors.Is(err, ErrUnavailable) {
+	if err := EnsureAvailable(path, language.Go, missing, inspect); !errors.Is(err, ErrUnavailable) {
 		t.Fatalf("first require error = %v", err)
 	}
-	if err := RequireAvailable(path, language.Go, func(string) (string, error) {
+	if err := EnsureAvailable(path, language.Go, func(string) (string, error) {
 		t.Fatal("cached negative result performed lookup")
 		return "", nil
 	}, inspect); !errors.Is(err, ErrUnavailable) || !strings.Contains(err.Error(), "prosetta probe --lang=go") {
@@ -73,21 +74,21 @@ func TestCachedUnavailableRequiresManualRefresh(t *testing.T) {
 	); err != nil {
 		t.Fatalf("manual refresh: %v", err)
 	}
-	if err := RequireAvailable(path, language.Go, missing, inspect); err != nil {
+	if err := EnsureAvailable(path, language.Go, missing, inspect); err != nil {
 		t.Fatalf("require after refresh: %v", err)
 	}
 }
 
-func TestRequireAvailableRebuildsIncompleteCache(t *testing.T) {
+func TestEnsureAvailableRebuildsIncompleteCache(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "toolchains.json")
-	if err := writeCache(path, cacheSnapshot{
-		SchemaVersion: cacheSchema,
-		Languages:     map[string]cacheEntry{"go": {Available: true}},
+	if err := writeCache(path, probeapi.CacheSnapshot{
+		SchemaVersion: probeapi.CacheSchemaVersion,
+		Languages:     map[string]probeapi.CacheEntry{"go": {Available: true}},
 	}); err != nil {
 		t.Fatal(err)
 	}
 	var lookedUp []string
-	if err := RequireAvailable(path, language.TypeScript, func(binary string) (string, error) {
+	if err := EnsureAvailable(path, language.TypeScript, func(binary string) (string, error) {
 		lookedUp = append(lookedUp, binary)
 		return "/tools/" + binary, nil
 	}, func(string, string) (string, error) { return "1.0", nil }); err != nil {
@@ -102,7 +103,7 @@ func TestRequireAvailableRebuildsIncompleteCache(t *testing.T) {
 	}
 }
 
-func TestRequireAvailableRebuildsStaleRequirements(t *testing.T) {
+func TestEnsureAvailableRebuildsStaleRequirements(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "toolchains.json")
 	lookup := func(binary string) (string, error) { return "/tools/" + binary, nil }
 	inspect := func(string, string) (string, error) { return "1.0", nil }
@@ -120,7 +121,7 @@ func TestRequireAvailableRebuildsStaleRequirements(t *testing.T) {
 		t.Fatal(err)
 	}
 	var lookedUp []string
-	if err := RequireAvailable(path, language.Go, func(binary string) (string, error) {
+	if err := EnsureAvailable(path, language.Go, func(binary string) (string, error) {
 		lookedUp = append(lookedUp, binary)
 		return "/tools/" + binary, nil
 	}, inspect); err != nil {
@@ -131,12 +132,12 @@ func TestRequireAvailableRebuildsStaleRequirements(t *testing.T) {
 	}
 }
 
-func TestRequireAvailableRepairsInvalidCache(t *testing.T) {
+func TestEnsureAvailableRepairsInvalidCache(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "toolchains.json")
 	if err := os.WriteFile(path, []byte("not JSON"), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	if err := RequireAvailable(path, language.Go,
+	if err := EnsureAvailable(path, language.Go,
 		func(binary string) (string, error) { return "/tools/" + binary, nil },
 		func(string, string) (string, error) { return "go 1.0", nil },
 	); err != nil {
@@ -157,12 +158,12 @@ func TestReadCacheRejectsOversizedFile(t *testing.T) {
 	}
 }
 
-func TestRequireAvailableFailsWhenCacheCannotBeWritten(t *testing.T) {
+func TestEnsureAvailableFailsWhenCacheCannotBeWritten(t *testing.T) {
 	parent := filepath.Join(t.TempDir(), "not-a-directory")
 	if err := os.WriteFile(parent, []byte("file"), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	err := RequireAvailable(filepath.Join(parent, "toolchains.json"), language.Go,
+	err := EnsureAvailable(filepath.Join(parent, "toolchains.json"), language.Go,
 		func(binary string) (string, error) { return "/tools/" + binary, nil },
 		func(string, string) (string, error) { return "go 1.0", nil },
 	)
@@ -199,7 +200,7 @@ func TestClearCacheRebuildsOnNextRequire(t *testing.T) {
 		t.Fatalf("stat cleared cache: %v", err)
 	}
 	lookups := 0
-	if err := RequireAvailable(path, language.Go, func(binary string) (string, error) {
+	if err := EnsureAvailable(path, language.Go, func(binary string) (string, error) {
 		lookups++
 		return lookup(binary)
 	}, inspect); err != nil {

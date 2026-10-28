@@ -2,13 +2,13 @@ package probecmd
 
 import (
 	"embed"
-	"encoding/json"
 	"fmt"
 	"io"
 	"strings"
 	"text/template"
 
 	probeapi "polyglot-rosetta/internal/api/probe"
+	"polyglot-rosetta/internal/cli"
 )
 
 //go:embed output/*.tmpl
@@ -22,10 +22,7 @@ type displayRow struct {
 
 func writeResult(output io.Writer, format string, result probeapi.Result) error {
 	if format == "json" {
-		if err := json.NewEncoder(output).Encode(result); err != nil {
-			return fmt.Errorf("write JSON result: %w", err)
-		}
-		return nil
+		return cli.WriteJSON(output, result)
 	}
 	return writeTextResult(output, result)
 }

@@ -10,28 +10,15 @@ import (
 	"slices"
 	"strings"
 
+	probeapi "polyglot-rosetta/internal/api/probe"
 	"polyglot-rosetta/internal/config"
 	"polyglot-rosetta/internal/domain/language"
 )
 
-const (
-	cacheSchema   = 2
-	maxCacheBytes = 64 << 10
-)
+const maxCacheBytes = 64 << 10
 
 // ErrUnavailable means the cached probe found missing or unusable tools.
 var ErrUnavailable = errors.New("language toolchain unavailable")
-
-type cacheEntry struct {
-	Required    []string `json:"required"`
-	Available   bool     `json:"available"`
-	Unavailable []string `json:"unavailable,omitempty"`
-}
-
-type cacheSnapshot struct {
-	SchemaVersion int                   `json:"schema_version"`
-	Languages     map[string]cacheEntry `json:"languages"`
-}
 
 // DefaultCachePath returns the persistent native toolchain cache location.
 func DefaultCachePath() (string, error) {
@@ -65,7 +52,10 @@ func ClearCache(path string) error {
 // availability snapshot. Unavailable results are cached too.
 func RefreshCache(path string, lookPath func(string) (string, error), inspect func(string, string) (string, error)) ([]Result, error) {
 	results := Probe(language.AllSupported(), lookPath, inspect)
-	snapshot := cacheSnapshot{SchemaVersion: cacheSchema, Languages: make(map[string]cacheEntry, len(results))}
+	snapshot := probeapi.CacheSnapshot{
+		SchemaVersion: probeapi.CacheSchemaVersion,
+		Languages:     make(map[string]probeapi.CacheEntry, len(results)),
+	}
 	for _, result := range results {
 		snapshot.Languages[string(result.Language)] = entryFromResult(result)
 	}
@@ -75,10 +65,10 @@ func RefreshCache(path string, lookPath func(string) (string, error), inspect fu
 	return results, nil
 }
 
-// RequireAvailable uses a complete cached snapshot, probing only when that
+// EnsureAvailable uses a complete cached snapshot, probing only when that
 // snapshot is missing or invalid. A cached negative result requires a manual
 // probe refresh after support is installed.
-func RequireAvailable(path string, lang language.Language, lookPath func(string) (string, error), inspect func(string, string) (string, error)) error {
+func EnsureAvailable(path string, lang language.Language, lookPath func(string) (string, error), inspect func(string, string) (string, error)) error {
 	if !language.IsValid(string(lang)) {
 		return fmt.Errorf("unsupported language %q", lang)
 	}
@@ -98,8 +88,8 @@ func RequireAvailable(path string, lang language.Language, lookPath func(string)
 	return fmt.Errorf("probe omitted supported language %q", lang)
 }
 
-func entryFromResult(result Result) cacheEntry {
-	entry := cacheEntry{Required: RequiredBinaries(result.Language), Available: true}
+func entryFromResult(result Result) probeapi.CacheEntry {
+	entry := probeapi.CacheEntry{Required: RequiredBinaries(result.Language), Available: true}
 	for _, tool := range result.Tools {
 		if tool.Error != nil {
 			entry.Available = false
@@ -109,53 +99,53 @@ func entryFromResult(result Result) cacheEntry {
 	return entry
 }
 
-func availabilityError(lang language.Language, entry cacheEntry) error {
+func availabilityError(lang language.Language, entry probeapi.CacheEntry) error {
 	if entry.Available {
 		return nil
 	}
 	return fmt.Errorf("%w for %s (%s); run prosetta probe --lang=%s after installing support", ErrUnavailable, lang, strings.Join(entry.Unavailable, ", "), lang)
 }
 
-func readCache(path string) (cacheSnapshot, error) {
+func readCache(path string) (probeapi.CacheSnapshot, error) {
 	file, err := os.Open(path)
 	if err != nil {
-		return cacheSnapshot{}, err
+		return probeapi.CacheSnapshot{}, err
 	}
 	defer file.Close()
 	data, err := io.ReadAll(io.LimitReader(file, maxCacheBytes+1))
 	if err != nil {
-		return cacheSnapshot{}, err
+		return probeapi.CacheSnapshot{}, err
 	}
 	if len(data) > maxCacheBytes {
-		return cacheSnapshot{}, fmt.Errorf("toolchain cache exceeds size limit")
+		return probeapi.CacheSnapshot{}, fmt.Errorf("toolchain cache exceeds size limit")
 	}
-	var snapshot cacheSnapshot
+	var snapshot probeapi.CacheSnapshot
 	if err := json.Unmarshal(data, &snapshot); err != nil {
-		return cacheSnapshot{}, fmt.Errorf("decode toolchain cache: %w", err)
+		return probeapi.CacheSnapshot{}, fmt.Errorf("decode toolchain cache: %w", err)
 	}
-	if snapshot.SchemaVersion != cacheSchema || snapshot.Languages == nil {
-		return cacheSnapshot{}, fmt.Errorf("unsupported toolchain cache schema")
+	if snapshot.SchemaVersion != probeapi.CacheSchemaVersion || snapshot.Languages == nil {
+		return probeapi.CacheSnapshot{}, fmt.Errorf("unsupported toolchain cache schema")
 	}
 	if len(snapshot.Languages) != len(language.AllSupported()) {
-		return cacheSnapshot{}, fmt.Errorf("incomplete toolchain cache")
+		return probeapi.CacheSnapshot{}, fmt.Errorf("incomplete toolchain cache")
 	}
 	for _, lang := range language.AllSupported() {
 		if _, found := snapshot.Languages[string(lang)]; !found {
-			return cacheSnapshot{}, fmt.Errorf("incomplete toolchain cache: missing %s", lang)
+			return probeapi.CacheSnapshot{}, fmt.Errorf("incomplete toolchain cache: missing %s", lang)
 		}
 	}
 	for name, entry := range snapshot.Languages {
 		if !language.IsValid(name) || entry.Available && len(entry.Unavailable) != 0 || !entry.Available && len(entry.Unavailable) == 0 {
-			return cacheSnapshot{}, fmt.Errorf("invalid toolchain cache entry for %q", name)
+			return probeapi.CacheSnapshot{}, fmt.Errorf("invalid toolchain cache entry for %q", name)
 		}
 		if !slices.Equal(entry.Required, RequiredBinaries(language.Language(name))) {
-			return cacheSnapshot{}, fmt.Errorf("stale toolchain requirements for %q", name)
+			return probeapi.CacheSnapshot{}, fmt.Errorf("stale toolchain requirements for %q", name)
 		}
 	}
 	return snapshot, nil
 }
 
-func writeCache(path string, snapshot cacheSnapshot) error {
+func writeCache(path string, snapshot probeapi.CacheSnapshot) error {
 	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
 		return err
 	}

@@ -7,12 +7,12 @@ import (
 	"polyglot-rosetta/internal/toolchain"
 )
 
-// RequireToolchain checks the cached native support for a language, probing
+// EnsureAvailable checks the cached native support for a language, probing
 // only when the complete availability snapshot is missing or invalid.
-func RequireToolchain(lang language.Language) error {
+func EnsureAvailable(lang language.Language) error {
 	cachePath, err := toolchain.DefaultCachePath()
 	if err != nil {
 		return err
 	}
-	return toolchain.RequireAvailable(cachePath, lang, exec.LookPath, toolchain.InspectBinary)
+	return toolchain.EnsureAvailable(cachePath, lang, exec.LookPath, toolchain.InspectBinary)
 }

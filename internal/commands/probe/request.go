@@ -35,11 +35,7 @@ func parseOptionsWithOutput(commandPath string, args []string, output io.Writer)
 	parser.BoolVar(&opts.clear, false, cli.Option{
 		Name: "clear", Description: "Remove cached toolchain results without probing",
 	})
-	if requestsJSON(args) {
-		parser.SetOutput(io.Discard)
-	} else {
-		parser.SetOutput(output)
-	}
+	cli.DiscardUsageIfJSON(parser, args, output)
 	if err := parser.Parse(args); err != nil {
 		return options{}, err
 	}
@@ -53,35 +49,13 @@ func parseOptionsWithOutput(commandPath string, args []string, output io.Writer)
 		}
 		opts.language = string(parsed)
 	}
-	if opts.format != "text" && opts.format != "json" {
+	if err := cli.ValidateOutputFormat(opts.format); err != nil {
 		parser.PrintUsage()
-		return options{}, fmt.Errorf("unsupported output format %q: use text or json", opts.format)
+		return options{}, err
 	}
 	if opts.clear && opts.language != "" {
 		parser.PrintUsage()
 		return options{}, fmt.Errorf("--clear cannot be combined with --lang: the cache covers all languages")
 	}
 	return opts, nil
-}
-
-// Detect JSON before parsing so malformed flags can still receive a JSON error.
-func requestsJSON(args []string) bool {
-	format := ""
-	for i, arg := range args {
-		if cli.IsHelp(arg) {
-			return false
-		}
-		if arg == "--format" || arg == "-format" {
-			if i+1 < len(args) {
-				format = args[i+1]
-			}
-			continue
-		}
-		if value, found := strings.CutPrefix(arg, "--format="); found {
-			format = value
-		} else if value, found := strings.CutPrefix(arg, "-format="); found {
-			format = value
-		}
-	}
-	return format == "json"
 }

@@ -9,14 +9,15 @@ import (
 	"polyglot-rosetta/internal/toolchain"
 )
 
-func TestResultFromToolchain(t *testing.T) {
-	result := resultFromToolchain([]toolchain.Result{
+func TestNativeToolchainsMapping(t *testing.T) {
+	rows := nativeToolchains([]toolchain.Result{
 		{Language: language.Go, Tools: []toolchain.Tool{{Binary: "go", Path: "/bin/go", Version: "go 1.0"}}},
 		{Language: language.TypeScript, Tools: []toolchain.Tool{
 			{Binary: "tsc", Path: "/bin/tsc", Error: errors.New("exit status 1")},
 			{Binary: "node", Error: errors.New("not found")},
 		}},
 	})
+	result := Probe("", staticHost{rows: rows})
 	if result.Status != probeapi.StatusUnavailable || result.Error != errToolchainsUnavailable.Error() || len(result.Toolchains) != 2 {
 		t.Fatalf("result = %+v", result)
 	}
@@ -28,4 +29,13 @@ func TestResultFromToolchain(t *testing.T) {
 	if ts.Available || ts.Tools[0].Available || ts.Tools[0].Path != "/bin/tsc" || ts.Tools[0].Error != "exit status 1" || ts.Tools[1].Error != "not found" {
 		t.Fatalf("TypeScript toolchain = %+v", ts)
 	}
+}
+
+type staticHost struct {
+	rows []probeapi.Toolchain
+	err  error
+}
+
+func (host staticHost) RefreshCache() ([]probeapi.Toolchain, error) {
+	return host.rows, host.err
 }
