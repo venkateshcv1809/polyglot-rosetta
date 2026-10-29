@@ -26,6 +26,17 @@ jobs:
       - name: Install Just Task Runner
         uses: extractions/setup-just@v2
 
+      - name: Verify Release Tag
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          version="$(go run ./cmd/prosetta version)"
+          if [ "$RELEASE_TAG" != "$version" ]; then
+            echo "Release tag $RELEASE_TAG does not match embedded version $version" >&2
+            exit 1
+          fi
+
       - name: Run Build Pipeline
         run: |
           just build-cli

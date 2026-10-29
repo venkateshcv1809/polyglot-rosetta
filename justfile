@@ -12,7 +12,6 @@ help:
 # ------------------------------------------------------------------------------
 BIN_DIR := "bin"
 DIST_DIR := "dist"
-VERSION := env_var_or_default("PROSETTA_VERSION", "dev")
 
 # ------------------------------------------------------------------------------
 # Build Targets
@@ -46,7 +45,7 @@ build-bundle:
 build-wasm:
 	@echo "Building WebAssembly engine target..."
 	@mkdir -p {{DIST_DIR}}
-	GOOS=js GOARCH=wasm go build -ldflags "-X polyglot-rosetta/internal/version.Value={{VERSION}}" -o {{DIST_DIR}}/prosetta.wasm ./cmd/wasm
+	GOOS=js GOARCH=wasm go build -o {{DIST_DIR}}/prosetta.wasm ./cmd/wasm
 	@cp "$(go env GOROOT)/lib/wasm/wasm_exec.js" {{DIST_DIR}}/wasm_exec.js
 	@echo "WASM target and runtime bridge ready in {{DIST_DIR}}/"
 
