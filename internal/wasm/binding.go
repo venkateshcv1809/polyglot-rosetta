@@ -10,4 +10,5 @@ import "syscall/js"
 type Binding struct {
 	Name    string
 	Handler func(this js.Value, args []js.Value) any
+	Help    MethodHelp
 }

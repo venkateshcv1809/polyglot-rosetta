@@ -18,6 +18,7 @@ func main() {
 		probecmd.WASM(),
 		versioncmd.WASM(),
 	}
+	bindings = append(bindings, wasm.Help(bindings))
 	for _, binding := range bindings {
 		callback := js.FuncOf(binding.Handler)
 		defer callback.Release()

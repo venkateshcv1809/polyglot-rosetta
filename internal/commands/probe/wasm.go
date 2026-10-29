@@ -25,7 +25,7 @@ func (host refreshHost) RefreshCache() ([]probeapi.Toolchain, error) {
 
 // WASM returns a binding that probes via the host refreshCache callback.
 func WASM() wasm.Binding {
-	return wasm.Binding{Name: "probe", Handler: func(_ js.Value, args []js.Value) any {
+	return wasm.Binding{Name: "probe", Help: wasmHelp(), Handler: func(_ js.Value, args []js.Value) any {
 		return wasm.Promise(func() any { return wasmProbe(args) })
 	}}
 }
