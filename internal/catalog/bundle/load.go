@@ -33,6 +33,7 @@ type Asset struct {
 // Manifest describes one consistent release of independently cached content.
 type Manifest struct {
 	SchemaVersion int     `json:"schema_version"`
+	MinEngine     string  `json:"min_engine,omitempty"`
 	Index         Asset   `json:"index"`
 	Templates     Asset   `json:"templates"`
 	Categories    []Asset `json:"categories"`

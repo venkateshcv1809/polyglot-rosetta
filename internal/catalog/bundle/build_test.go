@@ -31,7 +31,7 @@ func TestBuildCreatesCategoryAndTemplateArchives(t *testing.T) {
 	if _, err := ParseManifest(data); err != nil {
 		t.Fatalf("ParseManifest: %v", err)
 	}
-	if manifest.SchemaVersion != 1 || manifest.Index.Path != "index.json" || manifest.Templates.Path != "templates.tar.gz" || len(manifest.Categories) != 1 || manifest.Categories[0].Path != "fundamentals.tar.gz" {
+	if manifest.SchemaVersion != 1 || manifest.MinEngine != "v0.1.0" || manifest.Index.Path != "index.json" || manifest.Templates.Path != "templates.tar.gz" || len(manifest.Categories) != 1 || manifest.Categories[0].Path != "fundamentals.tar.gz" {
 		t.Fatalf("manifest = %+v", manifest)
 	}
 	for _, asset := range append([]Asset{manifest.Index, manifest.Templates}, manifest.Categories...) {

@@ -17,6 +17,7 @@ import (
 	"strings"
 
 	"polyglot-rosetta/internal/catalog"
+	"polyglot-rosetta/internal/version"
 )
 
 // Build writes the metadata index and one archive per registered root category.
@@ -41,7 +42,7 @@ func Build(problemsDir, templatesDir, outputDir string) error {
 	if err != nil {
 		return err
 	}
-	result := Manifest{SchemaVersion: 1, Index: indexAsset, Templates: templateAsset, Categories: []Asset{}}
+	result := Manifest{SchemaVersion: 1, MinEngine: version.MinimumEngine(), Index: indexAsset, Templates: templateAsset, Categories: []Asset{}}
 	for _, category := range index.Categories {
 		name := category.ID + ".tar.gz"
 		categoryAsset, err := writeArchive(outputDir, name, filepath.Join(problemsDir, category.ID), category.ID)
