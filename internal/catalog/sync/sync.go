@@ -17,6 +17,7 @@ import (
 
 	catalogbundle "polyglot-rosetta/internal/catalog/bundle"
 	"polyglot-rosetta/internal/config"
+	"polyglot-rosetta/internal/version"
 )
 
 // DefaultURL is the moving GitHub Pages catalog channel (directory containing manifest.json).
@@ -86,15 +87,12 @@ func Sync(ctx context.Context, baseURL, cacheDir string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+	if err := catalogbundle.CompatibleEngine(version.Value, manifest.MinEngine); err != nil {
+		return "", err
+	}
 	versionHash := sha256.Sum256(manifestData)
 	version := hex.EncodeToString(versionHash[:])
 	versionDir := filepath.Join(cacheDir, config.CatalogSnapshotsDirName, version)
-	if info, err := os.Stat(filepath.Join(versionDir, config.CatalogDirName, config.CatalogInfoFileName)); err == nil && !info.IsDir() {
-		if err := activate(cacheDir, version); err != nil {
-			return "", err
-		}
-		return filepath.Join(versionDir, config.CatalogDirName), nil
-	}
 
 	assets := append([]catalogbundle.Asset{manifest.Index, manifest.Templates}, manifest.Categories...)
 	contents := make(map[string][]byte, len(assets))
@@ -105,6 +103,15 @@ func Sync(ctx context.Context, baseURL, cacheDir string) (string, error) {
 		}
 		contents[asset.Path] = data
 	}
+	// Recheck cached asset bytes against the current manifest even when the
+	// extracted snapshot already exists. A snapshot is not proof of asset integrity.
+	if info, err := os.Stat(filepath.Join(versionDir, config.CatalogDirName, config.CatalogInfoFileName)); err == nil && !info.IsDir() {
+		if err := activate(cacheDir, version); err != nil {
+			return "", err
+		}
+		return filepath.Join(versionDir, config.CatalogDirName), nil
+	}
+
 	categories := make(map[string][]byte, len(manifest.Categories))
 	for _, asset := range manifest.Categories {
 		categories[asset.Path] = contents[asset.Path]

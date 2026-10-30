@@ -5,6 +5,17 @@ import (
 	"testing"
 )
 
+func TestValidNodeID(t *testing.T) {
+	if !ValidNodeID("hello-world") || !ValidNodeID("go") {
+		t.Fatal("expected kebab-case IDs to be valid")
+	}
+	for _, id := range []string{"", "Hello", "-lead", "trail-", "double--dash", "has_underscore"} {
+		if ValidNodeID(id) {
+			t.Errorf("ValidNodeID(%q) = true", id)
+		}
+	}
+}
+
 func TestDifficultyValidate(t *testing.T) {
 	for _, difficulty := range []Difficulty{DifficultyEasy, DifficultyMedium, DifficultyHard} {
 		if err := difficulty.Validate(); err != nil {

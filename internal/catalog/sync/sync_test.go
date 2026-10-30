@@ -14,6 +14,7 @@ import (
 	"testing"
 
 	catalogbundle "polyglot-rosetta/internal/catalog/bundle"
+	"polyglot-rosetta/internal/version"
 )
 
 type roundTripFunc func(*http.Request) (*http.Response, error)
@@ -102,6 +103,41 @@ func TestSyncActivatesVerifiedBundleAndReusesAssets(t *testing.T) {
 	}
 	if fetched["index.json"] != 2 || fetched["fundamentals.tar.gz"] != 1 || fetched["templates.tar.gz"] != 1 {
 		t.Fatalf("unchanged archives were redownloaded: %+v", fetched)
+	}
+}
+
+func TestSyncRejectsIncompatibleEngine(t *testing.T) {
+	output := t.TempDir()
+	if err := catalogbundle.Build("../../../problems", "../../../templates", output); err != nil {
+		t.Fatal(err)
+	}
+	manifestPath := filepath.Join(output, "manifest.json")
+	data, err := os.ReadFile(manifestPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var manifest catalogbundle.Manifest
+	if err := json.Unmarshal(data, &manifest); err != nil {
+		t.Fatal(err)
+	}
+	manifest.MinEngine = "v99.0.0"
+	rewritten, err := json.Marshal(manifest)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(manifestPath, rewritten, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	previous := version.Value
+	version.Value = "0.1.0"
+	t.Cleanup(func() { version.Value = previous })
+	useArchiveTransport(t, output, false, map[string]int{})
+	cache := t.TempDir()
+	if _, err := Sync(context.Background(), "https://static.example/problems/", cache); err == nil || !strings.Contains(err.Error(), "requires Prosetta") {
+		t.Fatalf("incompatible engine error = %v", err)
+	}
+	if _, ok, err := ActiveProblemsDir(cache); ok || err != nil {
+		t.Fatalf("unexpected activated catalog: %t, %v", ok, err)
 	}
 }
 

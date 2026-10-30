@@ -84,13 +84,10 @@ func catalogRoots() ([]string, bool, error) {
 		return []string{absolute}, true, nil
 	}
 
-	candidates := []string{config.CatalogDir, "./src"}
+	candidates := []string{config.CatalogDir}
 	if executable, err := os.Executable(); err == nil {
 		projectDir := filepath.Dir(filepath.Dir(executable))
-		candidates = append(candidates,
-			filepath.Join(projectDir, config.CatalogDirName),
-			filepath.Join(projectDir, "src"),
-		)
+		candidates = append(candidates, filepath.Join(projectDir, config.CatalogDirName))
 	}
 	seen := make(map[string]struct{}, len(candidates))
 	var roots []string

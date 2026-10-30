@@ -6,15 +6,12 @@ import (
 	"io/fs"
 	"os"
 	"path"
-	"regexp"
 	"sort"
 	"strings"
 
 	"polyglot-rosetta/internal/config"
 	"polyglot-rosetta/internal/domain/testcase"
 )
-
-var nodeIDPattern = regexp.MustCompile(`^[a-z0-9]+(?:-[a-z0-9]+)*$`)
 
 // Catalog is the ordered concept graph shared by local and published content.
 // Content fields are populated only when a complete catalog is requested.
@@ -219,7 +216,7 @@ func readInfo(files fs.FS, directory string) ([]byte, error) {
 }
 
 func childDir(files fs.FS, parent, id string) (string, error) {
-	if !nodeIDPattern.MatchString(id) {
+	if !ValidNodeID(id) {
 		return "", fmt.Errorf("ID must be lowercase kebab-case")
 	}
 	entries, err := fs.ReadDir(files, parent)

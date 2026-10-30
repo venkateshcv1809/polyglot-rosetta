@@ -76,6 +76,25 @@ func TestBuildCreatesCategoryAndTemplateArchives(t *testing.T) {
 	if _, err := Load(staleIndex, templateData, map[string][]byte{manifest.Categories[0].Path: categoryData}); err == nil {
 		t.Fatal("expected stale index to be rejected")
 	}
+	var expanded catalog.Catalog
+	if err := json.Unmarshal(indexData, &expanded); err != nil {
+		t.Fatal(err)
+	}
+	expanded.Categories = append(expanded.Categories, catalog.Category{ID: "sorting", Title: "Sorting", Order: 2})
+	wideIndex, err := json.Marshal(expanded)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := Load(wideIndex, templateData, map[string][]byte{manifest.Categories[0].Path: categoryData}); err == nil {
+		t.Fatal("expected a partial archive set to be rejected by Load")
+	}
+	selected, err := LoadSelected(wideIndex, templateData, map[string][]byte{manifest.Categories[0].Path: categoryData})
+	if err != nil {
+		t.Fatalf("LoadSelected: %v", err)
+	}
+	if _, ok := selected.Catalog.ConceptsByID[id]; !ok {
+		t.Fatal("LoadSelected dropped the fetched category")
+	}
 	first, err := os.ReadFile(filepath.Join(output, "fundamentals.tar.gz"))
 	if err != nil {
 		t.Fatal(err)

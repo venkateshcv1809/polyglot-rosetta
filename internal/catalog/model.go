@@ -2,7 +2,17 @@
 // metadata scanner. Packaging and synchronization live in subpackages.
 package catalog
 
-import "fmt"
+import (
+	"fmt"
+	"regexp"
+)
+
+var nodeIDPattern = regexp.MustCompile(`^[a-z0-9]+(?:-[a-z0-9]+)*$`)
+
+// ValidNodeID reports whether id is a lowercase kebab-case catalog directory name.
+func ValidNodeID(id string) bool {
+	return nodeIDPattern.MatchString(id)
+}
 
 // Difficulty represents a concept difficulty level.
 type Difficulty string

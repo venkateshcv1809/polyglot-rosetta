@@ -78,13 +78,31 @@ type Contents struct {
 	Catalog   catalog.Catalog
 }
 
-// Load validates and combines metadata, shared templates, and category archives.
+// Load validates a complete catalog: every root category archive must be present.
 func Load(indexData, templateArchive []byte, categoryArchives map[string][]byte) (Contents, error) {
+	return load(indexData, templateArchive, categoryArchives, false)
+}
+
+// LoadSelected validates templates and the root category archives that were fetched.
+// Hosts use this to open one category without downloading the rest of the catalog.
+func LoadSelected(indexData, templateArchive []byte, categoryArchives map[string][]byte) (Contents, error) {
+	return load(indexData, templateArchive, categoryArchives, true)
+}
+
+func load(indexData, templateArchive []byte, categoryArchives map[string][]byte, allowSubset bool) (Contents, error) {
 	var metadata catalog.Catalog
 	if err := json.Unmarshal(indexData, &metadata); err != nil {
 		return Contents{}, fmt.Errorf("decode bundle index: %w", err)
 	}
-	if metadata.ID == "" || metadata.Title == "" || len(categoryArchives) != len(metadata.Categories) {
+	if metadata.ID == "" || metadata.Title == "" {
+		return Contents{}, fmt.Errorf("bundle index and category archives do not match")
+	}
+	if allowSubset {
+		metadata = filterCatalog(metadata, categoryArchives)
+		if len(metadata.Categories) == 0 {
+			return Contents{}, fmt.Errorf("bundle index and category archives do not match")
+		}
+	} else if len(categoryArchives) != len(metadata.Categories) {
 		return Contents{}, fmt.Errorf("bundle index and category archives do not match")
 	}
 	root := catalog.ParentInfo{ID: metadata.ID, Title: metadata.Title, Description: metadata.Description, Items: []catalog.ItemRef{}}
@@ -120,8 +138,12 @@ func Load(indexData, templateArchive []byte, categoryArchives map[string][]byte)
 	if err != nil {
 		return Contents{}, fmt.Errorf("encode archive metadata: %w", err)
 	}
+	expectedIndex, err := json.Marshal(metadata)
+	if err != nil {
+		return Contents{}, err
+	}
 	var indexed, rebuilt any
-	if err := json.Unmarshal(indexData, &indexed); err != nil {
+	if err := json.Unmarshal(expectedIndex, &indexed); err != nil {
 		return Contents{}, err
 	}
 	if err := json.Unmarshal(actualData, &rebuilt); err != nil {
@@ -172,27 +194,47 @@ func addArchive(target fstest.MapFS, compressed []byte, prefix string) error {
 		if header.Size < 0 || total > maxArchiveBytes || count > maxArchiveFiles {
 			return fmt.Errorf("archive exceeds supported limits")
 		}
-		data, err := io.ReadAll(reader)
+		data, err := io.ReadAll(io.LimitReader(reader, header.Size+1))
 		if err != nil {
 			return err
+		}
+		if int64(len(data)) != header.Size {
+			return fmt.Errorf("archive member %q size mismatch", name)
 		}
 		target[name] = &fstest.MapFile{Data: data, Mode: 0o644}
 	}
 }
 
 func validCategoryID(id string) bool {
-	if id == "" || id[0] == '-' || id[len(id)-1] == '-' {
-		return false
-	}
-	previousHyphen := false
-	for _, r := range id {
-		if (r < 'a' || r > 'z') && (r < '0' || r > '9') && r != '-' {
-			return false
+	return catalog.ValidNodeID(id)
+}
+
+func filterCatalog(metadata catalog.Catalog, archives map[string][]byte) catalog.Catalog {
+	selected := make([]catalog.Category, 0, len(metadata.Categories))
+	ids := map[string]bool{}
+	for _, category := range metadata.Categories {
+		if _, ok := archives[category.ID+config.CategoryArchiveSuffix]; !ok {
+			continue
 		}
-		if r == '-' && previousHyphen {
-			return false
-		}
-		previousHyphen = r == '-'
+		selected = append(selected, category)
+		collectConceptIDs(category, ids)
 	}
-	return true
+	concepts := make(map[string]catalog.Concept, len(ids))
+	for id := range ids {
+		if concept, ok := metadata.ConceptsByID[id]; ok {
+			concepts[id] = concept
+		}
+	}
+	metadata.Categories = selected
+	metadata.ConceptsByID = concepts
+	return metadata
+}
+
+func collectConceptIDs(category catalog.Category, ids map[string]bool) {
+	for _, ref := range category.Concepts {
+		ids[ref.ID] = true
+	}
+	for _, child := range category.Categories {
+		collectConceptIDs(child, ids)
+	}
 }
