@@ -1,0 +1,16 @@
+
+Results:
+  {{.Border}}
+  | {{.StatusHeading}} | {{.CaseHeading}} | {{.TimeHeading}}{{if .HasReasons}} | {{.ReasonHeading}}{{end}} |
+  {{.Border}}
+{{range .Tests}}  | {{.Status}} | {{.Case}} | {{.Solution}}{{if $.HasReasons}} | {{.Reason}}{{end}} |
+{{end}}  {{.Border}}
+
+Summary:
+  Concept:      {{.Concept}}
+  Language:     {{.Language}}
+  Cases:        {{.Cases}}
+  Status:       {{.Status}}
+  Pass Rate:    {{printf "%.1f" .Score}}% ({{.Passed}}/{{.Total}} tests passed)
+  Build Time:   {{if .BuildDuration}}{{.BuildDuration}}{{else}}not required{{end}}
+  Elapsed Time: {{.Duration}}
