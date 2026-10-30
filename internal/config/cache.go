@@ -42,7 +42,7 @@ func ConfigPath() (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("resolve user config directory: %w", err)
 	}
-	return filepath.Join(directory, "prosetta", "config.json"), nil
+	return filepath.Join(directory, AppDirName, ConfigFileName), nil
 }
 
 // NativeCachePaths reads the shared configuration, using defaults until a file exists.
@@ -92,7 +92,7 @@ func EnsureCacheConfig() error {
 	if err := os.MkdirAll(filepath.Dir(location), 0o700); err != nil {
 		return fmt.Errorf("create config directory: %w", err)
 	}
-	file, err := os.CreateTemp(filepath.Dir(location), ".config-*")
+	file, err := os.CreateTemp(filepath.Dir(location), ConfigTempPattern)
 	if err != nil {
 		return fmt.Errorf("create cache config: %w", err)
 	}
@@ -133,9 +133,9 @@ func defaultCacheFile() (cacheFile, error) {
 	}
 	var settings cacheFile
 	settings.SchemaVersion = cacheSchemaVersion
-	settings.Cache.Root = filepath.Join(root, "prosetta")
-	settings.Cache.Catalog = "catalog"
-	settings.Cache.Toolchain = "toolchains.json"
+	settings.Cache.Root = filepath.Join(root, AppDirName)
+	settings.Cache.Catalog = CatalogCacheDirName
+	settings.Cache.Toolchain = ToolchainCacheFileName
 	return settings, nil
 }
 

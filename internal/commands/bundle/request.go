@@ -16,7 +16,7 @@ type options struct {
 func parseOptions(commandPath string, args []string) (options, error) {
 	var opts options
 	parser := cli.NewFlagParser(commandPath, "[options]")
-	parser.StringVar(&opts.output, filepath.Join(config.DistributionDir, "problems"), cli.Option{
+	parser.StringVar(&opts.output, filepath.Join(config.DistributionDir, config.CatalogDirName), cli.Option{
 		Name: "output", Value: "path", Description: "Directory for the problem archives and index",
 	})
 	if err := parser.Parse(args); err != nil {

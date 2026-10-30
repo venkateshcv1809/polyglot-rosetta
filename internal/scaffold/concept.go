@@ -8,6 +8,8 @@ import (
 
 	"polyglot-rosetta/internal/catalog"
 	"polyglot-rosetta/internal/domain/language"
+
+	"polyglot-rosetta/internal/config"
 )
 
 // CreateConcept scaffolds metadata, documentation, and language starters for a concept.
@@ -41,7 +43,7 @@ func (s *Scaffolder) CreateConcept(opts CreateConceptOptions) (err error) {
 		return fmt.Errorf("concept template directory missing at: %s", tmplConceptDir)
 	}
 
-	staticFiles := []string{"info.json", "testcases.json", "README.md", "PROBLEM.md"}
+	staticFiles := []string{config.CatalogInfoFileName, "testcases.json", "README.md", "PROBLEM.md"}
 	for _, fileName := range staticFiles {
 		exists, err := pathExists(filepath.Join(tmplConceptDir, fileName))
 		if err != nil {

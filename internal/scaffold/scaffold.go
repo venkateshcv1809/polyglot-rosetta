@@ -12,8 +12,8 @@ import (
 	"sort"
 	"strings"
 
-	"polyglot-rosetta/internal/config"
 	"polyglot-rosetta/internal/catalog"
+	"polyglot-rosetta/internal/config"
 )
 
 const (
@@ -89,7 +89,7 @@ func (s *Scaffolder) ensureRootInfoExists() error {
 		return fmt.Errorf("failed to create root dir %s: %w", s.RootDir, err)
 	}
 
-	infoPath := filepath.Join(s.RootDir, "info.json")
+	infoPath := filepath.Join(s.RootDir, config.CatalogInfoFileName)
 	exists, err := pathExists(infoPath)
 	if err != nil {
 		return err
@@ -98,7 +98,7 @@ func (s *Scaffolder) ensureRootInfoExists() error {
 		return nil
 	}
 
-	rootTmplPath := filepath.Join(s.TemplateDir, "category", "info.json")
+	rootTmplPath := filepath.Join(s.TemplateDir, "category", config.CatalogInfoFileName)
 	exists, err = pathExists(rootTmplPath)
 	if err != nil {
 		return err
@@ -135,7 +135,7 @@ func (s *Scaffolder) ValidateParent(parentRelPath string) error {
 		return err
 	}
 
-	infoPath := filepath.Join(parentDir, "info.json")
+	infoPath := filepath.Join(parentDir, config.CatalogInfoFileName)
 	data, err := os.ReadFile(infoPath)
 	if err != nil {
 		return fmt.Errorf("failed to read parent info.json at %s: %w", infoPath, err)
@@ -163,7 +163,7 @@ func (s *Scaffolder) registerInParent(parentRelPath, childID string) error {
 	if err != nil {
 		return err
 	}
-	infoPath := filepath.Join(parentDir, "info.json")
+	infoPath := filepath.Join(parentDir, config.CatalogInfoFileName)
 
 	data, err := os.ReadFile(infoPath)
 	if err != nil {

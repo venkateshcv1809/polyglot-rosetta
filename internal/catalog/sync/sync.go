@@ -19,6 +19,9 @@ import (
 	"polyglot-rosetta/internal/config"
 )
 
+// DefaultURL is the moving GitHub Pages catalog channel (directory containing manifest.json).
+const DefaultURL = config.CatalogURL
+
 var client = &http.Client{
 	Timeout: 60 * time.Second,
 	CheckRedirect: func(request *http.Request, via []*http.Request) error {
@@ -43,7 +46,7 @@ func DefaultDir() (string, error) {
 
 // ActiveProblemsDir returns the activated snapshot's problems tree, if present.
 func ActiveProblemsDir(cacheDir string) (string, bool, error) {
-	data, err := os.ReadFile(filepath.Join(cacheDir, "current"))
+	data, err := os.ReadFile(filepath.Join(cacheDir, config.CatalogCurrentFileName))
 	if os.IsNotExist(err) {
 		return "", false, nil
 	}
@@ -57,8 +60,8 @@ func ActiveProblemsDir(cacheDir string) (string, bool, error) {
 	if _, err := hex.DecodeString(version); err != nil {
 		return "", false, fmt.Errorf("invalid activated catalog version: %w", err)
 	}
-	root := filepath.Join(cacheDir, "versions", version, "problems")
-	if _, err := os.Stat(filepath.Join(root, "info.json")); err != nil {
+	root := filepath.Join(cacheDir, config.CatalogSnapshotsDirName, version, config.CatalogDirName)
+	if _, err := os.Stat(filepath.Join(root, config.CatalogInfoFileName)); err != nil {
 		return "", false, fmt.Errorf("activated catalog is incomplete: %w", err)
 	}
 	return root, true, nil
@@ -71,7 +74,7 @@ func Sync(ctx context.Context, baseURL, cacheDir string) (string, error) {
 	if err != nil || (parsed.Scheme != "http" && parsed.Scheme != "https") || parsed.Host == "" || parsed.RawQuery != "" || parsed.Fragment != "" {
 		return "", fmt.Errorf("catalog URL must be an HTTP(S) directory URL")
 	}
-	manifestURL, err := url.JoinPath(baseURL, "manifest.json")
+	manifestURL, err := url.JoinPath(baseURL, config.ManifestFileName)
 	if err != nil {
 		return "", err
 	}
@@ -85,12 +88,12 @@ func Sync(ctx context.Context, baseURL, cacheDir string) (string, error) {
 	}
 	versionHash := sha256.Sum256(manifestData)
 	version := hex.EncodeToString(versionHash[:])
-	versionDir := filepath.Join(cacheDir, "versions", version)
-	if info, err := os.Stat(filepath.Join(versionDir, "problems", "info.json")); err == nil && !info.IsDir() {
+	versionDir := filepath.Join(cacheDir, config.CatalogSnapshotsDirName, version)
+	if info, err := os.Stat(filepath.Join(versionDir, config.CatalogDirName, config.CatalogInfoFileName)); err == nil && !info.IsDir() {
 		if err := activate(cacheDir, version); err != nil {
 			return "", err
 		}
-		return filepath.Join(versionDir, "problems"), nil
+		return filepath.Join(versionDir, config.CatalogDirName), nil
 	}
 
 	assets := append([]catalogbundle.Asset{manifest.Index, manifest.Templates}, manifest.Categories...)
@@ -110,25 +113,25 @@ func Sync(ctx context.Context, baseURL, cacheDir string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("validate catalog bundle: %w", err)
 	}
-	versionsDir := filepath.Join(cacheDir, "versions")
+	versionsDir := filepath.Join(cacheDir, config.CatalogSnapshotsDirName)
 	if err := os.MkdirAll(versionsDir, 0o755); err != nil {
 		return "", err
 	}
-	stage, err := os.MkdirTemp(versionsDir, ".staging-*")
+	stage, err := os.MkdirTemp(versionsDir, config.CatalogStagePattern)
 	if err != nil {
 		return "", err
 	}
 	defer os.RemoveAll(stage)
-	if err := writeFiles(filepath.Join(stage, "problems"), bundle.Problems); err != nil {
+	if err := writeFiles(filepath.Join(stage, config.CatalogDirName), bundle.Problems); err != nil {
 		return "", err
 	}
-	if err := os.WriteFile(filepath.Join(stage, "problems", "index.json"), contents[manifest.Index.Path], 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(stage, config.CatalogDirName, config.CatalogIndexFileName), contents[manifest.Index.Path], 0o644); err != nil {
 		return "", err
 	}
-	if err := writeFiles(filepath.Join(stage, "templates"), bundle.Templates); err != nil {
+	if err := writeFiles(filepath.Join(stage, config.TemplateDirName), bundle.Templates); err != nil {
 		return "", err
 	}
-	if err := os.WriteFile(filepath.Join(stage, "manifest.json"), manifestData, 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(stage, config.ManifestFileName), manifestData, 0o644); err != nil {
 		return "", err
 	}
 	if err := os.Rename(stage, versionDir); err != nil {
@@ -137,11 +140,11 @@ func Sync(ctx context.Context, baseURL, cacheDir string) (string, error) {
 	if err := activate(cacheDir, version); err != nil {
 		return "", err
 	}
-	return filepath.Join(versionDir, "problems"), nil
+	return filepath.Join(versionDir, config.CatalogDirName), nil
 }
 
 func fetchAsset(ctx context.Context, baseURL, cacheDir string, asset catalogbundle.Asset) ([]byte, error) {
-	blob := filepath.Join(cacheDir, "assets", asset.SHA256)
+	blob := filepath.Join(cacheDir, config.CatalogAssetsDirName, asset.SHA256)
 	if data, err := os.ReadFile(blob); err == nil && validAsset(data, asset) {
 		return data, nil
 	}
@@ -159,7 +162,7 @@ func fetchAsset(ctx context.Context, baseURL, cacheDir string, asset catalogbund
 	if err := os.MkdirAll(filepath.Dir(blob), 0o755); err != nil {
 		return nil, err
 	}
-	file, err := os.CreateTemp(filepath.Dir(blob), ".asset-*")
+	file, err := os.CreateTemp(filepath.Dir(blob), config.CatalogAssetPattern)
 	if err != nil {
 		return nil, err
 	}
@@ -228,7 +231,7 @@ func activate(cacheDir, version string) error {
 	if err := os.MkdirAll(cacheDir, 0o755); err != nil {
 		return err
 	}
-	file, err := os.CreateTemp(cacheDir, ".current-*")
+	file, err := os.CreateTemp(cacheDir, config.CatalogCurrentPattern)
 	if err != nil {
 		return err
 	}
@@ -240,5 +243,5 @@ func activate(cacheDir, version string) error {
 	if err := file.Close(); err != nil {
 		return err
 	}
-	return os.Rename(file.Name(), filepath.Join(cacheDir, "current"))
+	return os.Rename(file.Name(), filepath.Join(cacheDir, config.CatalogCurrentFileName))
 }

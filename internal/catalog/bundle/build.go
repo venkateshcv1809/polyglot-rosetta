@@ -17,6 +17,7 @@ import (
 	"strings"
 
 	"polyglot-rosetta/internal/catalog"
+	"polyglot-rosetta/internal/config"
 	"polyglot-rosetta/internal/version"
 )
 
@@ -34,17 +35,17 @@ func Build(problemsDir, templatesDir, outputDir string) error {
 		return fmt.Errorf("encode index: %w", err)
 	}
 	encoded = append(encoded, '\n')
-	indexAsset, err := writeBytes(outputDir, "index.json", encoded)
+	indexAsset, err := writeBytes(outputDir, config.CatalogIndexFileName, encoded)
 	if err != nil {
 		return err
 	}
-	templateAsset, err := writeArchive(outputDir, "templates.tar.gz", templatesDir, "")
+	templateAsset, err := writeArchive(outputDir, config.TemplatesArchiveName, templatesDir, "")
 	if err != nil {
 		return err
 	}
 	result := Manifest{SchemaVersion: 1, MinEngine: version.MinimumEngine(), Index: indexAsset, Templates: templateAsset, Categories: []Asset{}}
 	for _, category := range index.Categories {
-		name := category.ID + ".tar.gz"
+		name := category.ID + config.CategoryArchiveSuffix
 		categoryAsset, err := writeArchive(outputDir, name, filepath.Join(problemsDir, category.ID), category.ID)
 		if err != nil {
 			return err
@@ -56,12 +57,12 @@ func Build(problemsDir, templatesDir, outputDir string) error {
 	if err != nil {
 		return fmt.Errorf("encode bundle manifest: %w", err)
 	}
-	_, err = writeBytes(outputDir, "manifest.json", append(encoded, '\n'))
+	_, err = writeBytes(outputDir, config.ManifestFileName, append(encoded, '\n'))
 	return err
 }
 
 func writeArchive(outputDir, name, sourceDir, prefix string) (Asset, error) {
-	file, err := os.CreateTemp(outputDir, ".bundle-*")
+	file, err := os.CreateTemp(outputDir, config.BundleTempPattern)
 	if err != nil {
 		return Asset{}, fmt.Errorf("create %s: %w", name, err)
 	}
@@ -117,7 +118,7 @@ func writeArchive(outputDir, name, sourceDir, prefix string) (Asset, error) {
 }
 
 func writeBytes(outputDir, name string, data []byte) (Asset, error) {
-	file, err := os.CreateTemp(outputDir, ".bundle-*")
+	file, err := os.CreateTemp(outputDir, config.BundleTempPattern)
 	if err != nil {
 		return Asset{}, err
 	}

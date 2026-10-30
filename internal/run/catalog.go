@@ -14,7 +14,7 @@ import (
 	"polyglot-rosetta/internal/domain/language"
 )
 
-const catalogEnvironment = "PROSETTA_CATALOG"
+const catalogEnvironment = config.CatalogEnvironment
 
 // ErrCatalogUnavailable means neither a local nor an activated catalog exists.
 var ErrCatalogUnavailable = errors.New("no catalog is available")
@@ -88,7 +88,7 @@ func catalogRoots() ([]string, bool, error) {
 	if executable, err := os.Executable(); err == nil {
 		projectDir := filepath.Dir(filepath.Dir(executable))
 		candidates = append(candidates,
-			filepath.Join(projectDir, "problems"),
+			filepath.Join(projectDir, config.CatalogDirName),
 			filepath.Join(projectDir, "src"),
 		)
 	}

@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+
+	"polyglot-rosetta/internal/config"
 )
 
 // Workspace manages dedicated temporary directories for execution sessions.
@@ -13,7 +15,7 @@ type Workspace struct {
 
 // NewWorkspace creates a unique temporary directory using OS temp APIs.
 func NewWorkspace() (*Workspace, error) {
-	dir, err := os.MkdirTemp("", "polyglot-rosetta-*")
+	dir, err := os.MkdirTemp("", config.ExecutionTempPattern)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create temporary workspace: %w", err)
 	}

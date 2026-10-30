@@ -16,6 +16,7 @@ import (
 
 	"polyglot-rosetta/internal/catalog"
 	"polyglot-rosetta/internal/catalog/content"
+	"polyglot-rosetta/internal/config"
 )
 
 const (
@@ -45,7 +46,7 @@ func ParseManifest(data []byte) (Manifest, error) {
 	if err := json.Unmarshal(data, &manifest); err != nil {
 		return Manifest{}, fmt.Errorf("decode bundle manifest: %w", err)
 	}
-	if manifest.SchemaVersion != 1 || manifest.Index.Path != "index.json" || manifest.Templates.Path != "templates.tar.gz" {
+	if manifest.SchemaVersion != 1 || manifest.Index.Path != config.CatalogIndexFileName || manifest.Templates.Path != config.TemplatesArchiveName {
 		return Manifest{}, fmt.Errorf("unsupported bundle manifest")
 	}
 	for _, asset := range append([]Asset{manifest.Index, manifest.Templates}, manifest.Categories...) {
@@ -56,13 +57,13 @@ func ParseManifest(data []byte) (Manifest, error) {
 			return Manifest{}, fmt.Errorf("invalid digest for %q: %w", asset.Path, err)
 		}
 	}
-	seen := map[string]bool{"index.json": true, "templates.tar.gz": true}
+	seen := map[string]bool{config.CatalogIndexFileName: true, config.TemplatesArchiveName: true}
 	if len(manifest.Categories) > 1000 {
 		return Manifest{}, fmt.Errorf("too many category archives")
 	}
 	for _, asset := range manifest.Categories {
-		id := strings.TrimSuffix(asset.Path, ".tar.gz")
-		if !strings.HasSuffix(asset.Path, ".tar.gz") || !validCategoryID(id) || seen[asset.Path] {
+		id := strings.TrimSuffix(asset.Path, config.CategoryArchiveSuffix)
+		if !strings.HasSuffix(asset.Path, config.CategoryArchiveSuffix) || !validCategoryID(id) || seen[asset.Path] {
 			return Manifest{}, fmt.Errorf("invalid category archive %q", asset.Path)
 		}
 		seen[asset.Path] = true
@@ -92,7 +93,7 @@ func Load(indexData, templateArchive []byte, categoryArchives map[string][]byte)
 		if !validCategoryID(category.ID) {
 			return Contents{}, fmt.Errorf("invalid category ID %q", category.ID)
 		}
-		name := category.ID + ".tar.gz"
+		name := category.ID + config.CategoryArchiveSuffix
 		archive, ok := categoryArchives[name]
 		if !ok {
 			return Contents{}, fmt.Errorf("missing category archive %q", name)
@@ -106,7 +107,7 @@ func Load(indexData, templateArchive []byte, categoryArchives map[string][]byte)
 	if err != nil {
 		return Contents{}, err
 	}
-	problems["info.json"] = &fstest.MapFile{Data: rootData, Mode: 0o644}
+	problems[config.CatalogInfoFileName] = &fstest.MapFile{Data: rootData, Mode: 0o644}
 	templates := fstest.MapFS{}
 	if err := addArchive(templates, templateArchive, ""); err != nil {
 		return Contents{}, fmt.Errorf("decode templates: %w", err)

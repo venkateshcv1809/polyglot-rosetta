@@ -10,6 +10,7 @@ import (
 	"sort"
 	"strings"
 
+	"polyglot-rosetta/internal/config"
 	"polyglot-rosetta/internal/domain/testcase"
 )
 
@@ -181,7 +182,7 @@ func readNode(files fs.FS, directory string) (ParentInfo, ConceptInfo, bool, err
 		Difficulty Difficulty `json:"difficulty"`
 	}
 	if err := json.Unmarshal(data, &marker); err != nil {
-		return ParentInfo{}, ConceptInfo{}, false, fmt.Errorf("decode %q: %w", path.Join(directory, "info.json"), err)
+		return ParentInfo{}, ConceptInfo{}, false, fmt.Errorf("decode %q: %w", path.Join(directory, config.CatalogInfoFileName), err)
 	}
 	if marker.Difficulty == "" {
 		var parent ParentInfo
@@ -203,18 +204,18 @@ func readInfo(files fs.FS, directory string) ([]byte, error) {
 		return nil, err
 	}
 	for _, entry := range entries {
-		if entry.Name() != "info.json" {
+		if entry.Name() != config.CatalogInfoFileName {
 			continue
 		}
 		if entry.Type()&fs.ModeSymlink != 0 {
-			return nil, fmt.Errorf("metadata file %q must not be a symbolic link", path.Join(directory, "info.json"))
+			return nil, fmt.Errorf("metadata file %q must not be a symbolic link", path.Join(directory, config.CatalogInfoFileName))
 		}
 		if !entry.Type().IsRegular() {
-			return nil, fmt.Errorf("metadata file %q is not regular", path.Join(directory, "info.json"))
+			return nil, fmt.Errorf("metadata file %q is not regular", path.Join(directory, config.CatalogInfoFileName))
 		}
-		return fs.ReadFile(files, path.Join(directory, "info.json"))
+		return fs.ReadFile(files, path.Join(directory, config.CatalogInfoFileName))
 	}
-	return nil, fmt.Errorf("metadata file %q is missing", path.Join(directory, "info.json"))
+	return nil, fmt.Errorf("metadata file %q is missing", path.Join(directory, config.CatalogInfoFileName))
 }
 
 func childDir(files fs.FS, parent, id string) (string, error) {

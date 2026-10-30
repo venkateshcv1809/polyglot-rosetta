@@ -153,7 +153,7 @@ func writeCache(path string, snapshot probeapi.CacheSnapshot) error {
 	if err != nil {
 		return err
 	}
-	file, err := os.CreateTemp(filepath.Dir(path), ".toolchains-*")
+	file, err := os.CreateTemp(filepath.Dir(path), config.ToolchainTempPattern)
 	if err != nil {
 		return err
 	}

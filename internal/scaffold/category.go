@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+
+	"polyglot-rosetta/internal/config"
 )
 
 // CreateCategory scaffolds a category and registers it with its parent.
@@ -30,7 +32,7 @@ func (s *Scaffolder) CreateCategory(opts CreateCategoryOptions) (err error) {
 		return fmt.Errorf("target category directory already exists: %s", targetDir)
 	}
 
-	categoryTmplPath := filepath.Join(s.TemplateDir, "category", "info.json")
+	categoryTmplPath := filepath.Join(s.TemplateDir, "category", config.CatalogInfoFileName)
 	exists, err = pathExists(categoryTmplPath)
 	if err != nil {
 		return err
@@ -49,7 +51,7 @@ func (s *Scaffolder) CreateCategory(opts CreateCategoryOptions) (err error) {
 		}
 	}()
 
-	if err := s.copyCategoryTemplateFile(categoryTmplPath, filepath.Join(stagingDir, "info.json"), opts); err != nil {
+	if err := s.copyCategoryTemplateFile(categoryTmplPath, filepath.Join(stagingDir, config.CatalogInfoFileName), opts); err != nil {
 		return err
 	}
 	if err := os.Rename(stagingDir, targetDir); err != nil {

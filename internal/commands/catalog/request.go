@@ -8,6 +8,7 @@ import (
 
 	catalogsync "polyglot-rosetta/internal/catalog/sync"
 	"polyglot-rosetta/internal/cli"
+	"polyglot-rosetta/internal/config"
 )
 
 type options struct {
@@ -23,7 +24,7 @@ func parseOptions(commandPath string, args []string) (options, error) {
 func parseOptionsWithOutput(commandPath string, args []string, output io.Writer) (options, error) {
 	var opts options
 	parser := cli.NewFlagParser(commandPath, "--url=<directory-url> [options]")
-	parser.StringVar(&opts.url, os.Getenv("PROSETTA_CATALOG_URL"), cli.Option{
+	parser.StringVar(&opts.url, os.Getenv(config.CatalogURLEnvironment), cli.Option{
 		Name: "url", Value: "directory-url", Description: "Static URL containing manifest.json and content archives", Required: true,
 	})
 	parser.StringVar(&opts.format, "text", cli.Option{
