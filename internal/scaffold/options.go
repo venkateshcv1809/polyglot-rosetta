@@ -3,12 +3,9 @@ package scaffold
 import (
 	"errors"
 	"fmt"
-	"regexp"
 
 	"polyglot-rosetta/internal/catalog"
 )
-
-var slugRegex = regexp.MustCompile(`^[a-z0-9]+(?:-[a-z0-9]+)*$`)
 
 // CreateCategoryOptions contains the metadata and parent path for a category.
 type CreateCategoryOptions struct {
@@ -23,7 +20,7 @@ func (o CreateCategoryOptions) Validate() error {
 	if o.ID == "" {
 		return errors.New("category ID cannot be empty")
 	}
-	if !slugRegex.MatchString(o.ID) {
+	if !catalog.ValidNodeID(o.ID) {
 		return fmt.Errorf("invalid category ID %q: must be lowercase kebab-case (e.g. 'control-flow')", o.ID)
 	}
 	if o.Title == "" {
@@ -46,7 +43,7 @@ func (o CreateConceptOptions) Validate() error {
 	if o.ID == "" {
 		return errors.New("concept ID cannot be empty")
 	}
-	if !slugRegex.MatchString(o.ID) {
+	if !catalog.ValidNodeID(o.ID) {
 		return fmt.Errorf("invalid concept ID %q: must be lowercase kebab-case (e.g. 'hello-world')", o.ID)
 	}
 	if o.Title == "" {
