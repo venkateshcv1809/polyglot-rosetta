@@ -2,7 +2,6 @@ package runcmd
 
 import (
 	"embed"
-	"encoding/json"
 	"fmt"
 	"io"
 	"strings"
@@ -11,6 +10,7 @@ import (
 	"unicode/utf8"
 
 	runapi "polyglot-rosetta/internal/api/run"
+	"polyglot-rosetta/internal/cli"
 	"polyglot-rosetta/internal/domain/evaluation"
 )
 
@@ -46,10 +46,7 @@ type resultDisplay struct {
 
 func writeResult(output io.Writer, format string, result runapi.Result) error {
 	if format == "json" {
-		if err := json.NewEncoder(output).Encode(result); err != nil {
-			return fmt.Errorf("write JSON result: %w", err)
-		}
-		return nil
+		return cli.WriteJSON(output, result)
 	}
 	return writeEvaluationEnd(output, result)
 }

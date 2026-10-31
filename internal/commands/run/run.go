@@ -11,7 +11,6 @@ import (
 	runapi "polyglot-rosetta/internal/api/run"
 	"polyglot-rosetta/internal/cli"
 	"polyglot-rosetta/internal/domain/evaluation"
-	"polyglot-rosetta/internal/domain/language"
 	runservice "polyglot-rosetta/internal/run"
 )
 
@@ -30,15 +29,12 @@ func runCommand(commandPath string, args []string) error {
 func runCommandWithIO(ctx context.Context, commandPath string, args []string, stdin io.Reader, stdout io.Writer) error {
 	opts, err := parseOptionsWithOutput(commandPath, args, stdout)
 	if err != nil {
-		if !requestsJSON(args) {
+		if !cli.RequestsJSON(args) {
 			return err
 		}
 		result := initialResult(opts)
 		result.Error = err.Error()
-		if writeErr := writeResult(stdout, "json", result); writeErr != nil {
-			return writeErr
-		}
-		return cli.ReportedError(err)
+		return cli.ReportJSON(stdout, result, err)
 	}
 	return runWithIO(ctx, opts, stdin, stdout)
 }
@@ -46,14 +42,9 @@ func runCommandWithIO(ctx context.Context, commandPath string, args []string, st
 func runWithIO(ctx context.Context, opts options, stdin io.Reader, stdout io.Writer) error {
 	prepared, runErr := prepareRun(opts, stdin)
 	if runErr == nil {
-		runErr = runservice.EnsureAvailable(language.Language(opts.language))
-	}
-	if runErr == nil {
-		evaluation, err := runservice.Evaluate(ctx, prepared.request, prepared.concept)
-		runErr = err
-		if err == nil {
-			prepared.result = resultFromEvaluation(prepared.result, evaluation)
-		}
+		inputSource := prepared.result.InputSource
+		prepared.result, runErr = Run(ctx, prepared.request, nativeHost{concept: prepared.concept})
+		prepared.result.InputSource = inputSource
 	}
 	if runErr != nil {
 		prepared.result.Error = runErr.Error()
@@ -90,7 +81,7 @@ func prepareRun(opts options, stdin io.Reader) (preparedRun, error) {
 	}
 	if err != nil {
 		if errors.Is(err, runservice.ErrCatalogUnavailable) {
-			return prepared, fmt.Errorf("%w: run prosetta catalog --url=<directory-url> or set PROSETTA_CATALOG", err)
+			return prepared, fmt.Errorf("%w: run prosetta catalog or set PROSETTA_CATALOG", err)
 		}
 		if source == nil && errors.Is(err, iofs.ErrNotExist) {
 			return prepared, fmt.Errorf("%w (use --stdin or --code to supply source)", err)

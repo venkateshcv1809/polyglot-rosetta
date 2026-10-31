@@ -8,6 +8,7 @@ import (
 
 	catalogcmd "polyglot-rosetta/internal/commands/catalog"
 	probecmd "polyglot-rosetta/internal/commands/probe"
+	runcmd "polyglot-rosetta/internal/commands/run"
 	versioncmd "polyglot-rosetta/internal/commands/version"
 	"polyglot-rosetta/internal/wasm"
 )
@@ -19,6 +20,7 @@ func main() {
 		wasm.Bind(),
 		catalogcmd.WASM(store),
 		probecmd.WASM(),
+		runcmd.WASM(store),
 		versioncmd.WASM(),
 	}
 	bindings = append(bindings, wasm.Help(bindings))

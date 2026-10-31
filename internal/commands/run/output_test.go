@@ -37,7 +37,10 @@ func TestWriteEvaluationText(t *testing.T) {
 func TestWriteResultJSON(t *testing.T) {
 	var output bytes.Buffer
 	buildDurationMs := int64(125)
-	result := runapi.Result{ID: "c-12345678", Status: evaluation.StatusError, Error: "build failed", BuildDurationMs: &buildDurationMs}
+	result := runapi.NewResult()
+	result.ID = "c-12345678"
+	result.Error = "build failed"
+	result.BuildDurationMs = &buildDurationMs
 	if err := writeResult(&output, "json", result); err != nil {
 		t.Fatal(err)
 	}
@@ -45,7 +48,7 @@ func TestWriteResultJSON(t *testing.T) {
 	if err := json.Unmarshal(output.Bytes(), &decoded); err != nil {
 		t.Fatal(err)
 	}
-	if decoded.ID != result.ID || decoded.Status != result.Status || decoded.Error != result.Error || decoded.BuildDurationMs == nil || *decoded.BuildDurationMs != buildDurationMs {
+	if decoded.SchemaVersion != result.SchemaVersion || decoded.ID != result.ID || decoded.Status != result.Status || decoded.Error != result.Error || decoded.BuildDurationMs == nil || *decoded.BuildDurationMs != buildDurationMs {
 		t.Fatalf("decoded = %+v", decoded)
 	}
 }

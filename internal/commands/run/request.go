@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"strings"
 
 	"polyglot-rosetta/internal/catalog"
 	"polyglot-rosetta/internal/cli"
@@ -27,7 +26,7 @@ func parseOptions(commandPath string, args []string) (options, error) {
 
 func parseOptionsWithOutput(commandPath string, args []string, output io.Writer) (options, error) {
 	var opts options
-	jsonOutput := requestsJSON(args)
+	jsonOutput := cli.RequestsJSON(args)
 	parser := cli.NewFlagParser(commandPath,
 		"--id=<id> --lang=<language> [options]",
 		"--id=<id> --lang=<language> --stdin [options]",
@@ -39,11 +38,7 @@ func parseOptionsWithOutput(commandPath string, args []string, output io.Writer)
 	parser.StringVar(&opts.language, "", cli.Option{Name: "lang", Value: "language", Description: "Target programming language", Required: true})
 	parser.StringVar(&opts.format, "text", cli.Option{Name: "format", Value: "text|json", Description: "Output format", Default: "text"})
 	parser.BoolVar(&opts.all, false, cli.Option{Name: "all", Description: "Include hidden test cases"})
-	if jsonOutput {
-		parser.SetOutput(io.Discard)
-	} else {
-		parser.SetOutput(output)
-	}
+	cli.DiscardUsageIfJSON(parser, args, output)
 
 	if err := parser.Parse(args); err != nil {
 		return opts, err
@@ -78,31 +73,9 @@ func parseOptionsWithOutput(commandPath string, args []string, output io.Writer)
 		}
 		return opts, fmt.Errorf("unsupported language %q", opts.language)
 	}
-	if opts.format != "text" && opts.format != "json" {
+	if err := cli.ValidateOutputFormat(opts.format); err != nil {
 		parser.PrintUsage()
-		return opts, fmt.Errorf("unsupported output format %q: use text or json", opts.format)
+		return opts, err
 	}
 	return opts, nil
-}
-
-// Detect JSON before parsing so malformed flags can still receive a JSON error.
-func requestsJSON(args []string) bool {
-	format := ""
-	for i, arg := range args {
-		if cli.IsHelp(arg) {
-			return false
-		}
-		if arg == "--format" || arg == "-format" {
-			if i+1 < len(args) {
-				format = args[i+1]
-			}
-			continue
-		}
-		if value, found := strings.CutPrefix(arg, "--format="); found {
-			format = value
-		} else if value, found := strings.CutPrefix(arg, "-format="); found {
-			format = value
-		}
-	}
-	return format == "json"
 }

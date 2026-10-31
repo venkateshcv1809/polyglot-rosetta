@@ -26,9 +26,5 @@ func Prepare(id, languageName string, mode evaluation.Mode, source *string) (run
 	} else {
 		code = *source
 	}
-	request := runapi.Request{ID: concept.ID, Language: languageName, Source: code, Mode: mode}
-	if err := request.Validate(); err != nil {
-		return runapi.Request{}, concept, err
-	}
-	return request, concept, nil
+	return runapi.Request{ID: concept.ID, Language: languageName, Source: code, Mode: mode}, concept, nil
 }

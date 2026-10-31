@@ -316,7 +316,7 @@ func TestRunJSONReportsPreparationError(t *testing.T) {
 	}
 	if result.Status != evaluation.StatusError ||
 		!strings.Contains(result.Error, "no catalog is available") ||
-		!strings.Contains(result.Error, "prosetta catalog --url") {
+		!strings.Contains(result.Error, "prosetta catalog") {
 		t.Fatalf("result = %+v", result)
 	}
 }
