@@ -4,8 +4,6 @@ on:
   push:
     tags:
       - 'v*'
-    branches:
-      - develop
 
 permissions:
   contents: read
@@ -45,7 +43,6 @@ jobs:
 
       - name: Verify Release Commit Is on Main
         run: |
-          # Full checkout history includes origin/main without retaining credentials.
           if ! git merge-base --is-ancestor "$GITHUB_SHA" origin/main; then
             echo "Release tag must point to a commit in main's history" >&2
             exit 1
