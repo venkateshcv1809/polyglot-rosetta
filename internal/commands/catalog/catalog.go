@@ -19,28 +19,26 @@ func catalogCommand(commandPath string, args []string) error {
 func catalogCommandWithIO(ctx context.Context, commandPath string, args []string, output io.Writer, sync syncCatalog) error {
 	opts, err := parseOptionsWithOutput(commandPath, args, output)
 	if err != nil {
-		if !requestsJSON(args) {
+		if !cli.RequestsJSON(args) {
 			return err
 		}
-		result := catalogapi.Result{Status: catalogapi.StatusError, Error: err.Error()}
-		if writeErr := writeResult(output, "json", result); writeErr != nil {
-			return writeErr
-		}
-		return cli.ReportedError(err)
+		result := catalogapi.NewResult(catalogapi.StatusError)
+		result.Error = err.Error()
+		return cli.ReportJSON(output, result, err)
 	}
 	return catalogWithSync(ctx, opts, output, sync)
 }
 
 func catalogWithSync(ctx context.Context, opts options, output io.Writer, sync syncCatalog) error {
-	root, err := sync(ctx, opts.url, opts.cache)
+	result, err := Catalog(ctx, nativeHost{options: opts, sync: sync})
 	if err != nil {
 		if opts.format != "json" {
 			return cli.CommandFailure("Catalog not ready", err)
 		}
-		if writeErr := writeResult(output, opts.format, catalogapi.Result{Status: catalogapi.StatusError, Error: err.Error()}); writeErr != nil {
+		if writeErr := writeResult(output, opts.format, result); writeErr != nil {
 			return writeErr
 		}
 		return cli.ReportedError(err)
 	}
-	return writeResult(output, opts.format, catalogapi.Result{Status: catalogapi.StatusOK, Root: root})
+	return writeResult(output, opts.format, result)
 }

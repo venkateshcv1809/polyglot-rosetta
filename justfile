@@ -111,6 +111,13 @@ lint:
     @echo "Running static analysis..."
     go vet ./...
 
+# Versioned public binary, WASM core, and hashed catalog for v* tags
+release: build-cli build-internal build-wasm build-bundle
+	cp {{BIN_DIR}}/prosetta {{BIN_DIR}}/prosetta-"$({{BIN_DIR}}/prosetta version)"
+
+# Content-only artifacts for catalog-v* tags
+release-catalog: build-bundle
+
 # Tidy and verify go.mod / go.sum dependencies
 tidy:
     @echo "Tidying Go module dependencies..."

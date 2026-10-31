@@ -2,12 +2,12 @@ package catalogcmd
 
 import (
 	"embed"
-	"encoding/json"
 	"fmt"
 	"io"
 	"text/template"
 
 	catalogapi "polyglot-rosetta/internal/api/catalog"
+	"polyglot-rosetta/internal/cli"
 )
 
 //go:embed output/*.tmpl
@@ -15,10 +15,7 @@ var outputFiles embed.FS
 
 func writeResult(output io.Writer, format string, result catalogapi.Result) error {
 	if format == "json" {
-		if err := json.NewEncoder(output).Encode(result); err != nil {
-			return fmt.Errorf("write JSON result: %w", err)
-		}
-		return nil
+		return cli.WriteJSON(output, result)
 	}
 	tmpl, err := template.New("catalog.tmpl").Option("missingkey=error").ParseFS(outputFiles, "output/*.tmpl")
 	if err != nil {

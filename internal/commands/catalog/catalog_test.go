@@ -5,12 +5,47 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
 	catalogapi "polyglot-rosetta/internal/api/catalog"
 	"polyglot-rosetta/internal/cli"
+	"polyglot-rosetta/internal/version"
 )
+
+func TestCatalogCommandUsesLocalTreeWhenDev(t *testing.T) {
+	previous := version.Value
+	version.Value = "dev"
+	t.Cleanup(func() { version.Value = previous })
+	t.Setenv("PROSETTA_CATALOG_URL", "")
+	useTestCatalogCache(t)
+	root := filepath.Join(t.TempDir(), "problems")
+	if err := os.MkdirAll(filepath.Join(root, "fundamentals", "hello-world"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	for name, data := range map[string]string{
+		"info.json":                          `{"id":"root","title":"Problems","items":[{"id":"fundamentals","order":1}]}`,
+		"fundamentals/info.json":             `{"id":"fundamentals","title":"Fundamentals","items":[{"id":"hello-world","order":1}]}`,
+		"fundamentals/hello-world/info.json": `{"id":"hello-world","title":"Hello World","difficulty":"Easy"}`,
+	} {
+		path := filepath.Join(root, filepath.FromSlash(name))
+		if err := os.WriteFile(path, []byte(data), 0o600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	t.Setenv("PROSETTA_CATALOG", root)
+	var output bytes.Buffer
+	err := catalogCommandWithIO(context.Background(), "prosetta catalog", nil, &output,
+		func(context.Context, string, string) (string, error) {
+			t.Fatal("development catalog fetched a URL")
+			return "", nil
+		})
+	if err != nil || !strings.Contains(output.String(), root) {
+		t.Fatalf("output = %q, error = %v", output.String(), err)
+	}
+}
 
 func TestCatalogCommandTextSuccess(t *testing.T) {
 	t.Setenv("PROSETTA_CATALOG_URL", "")
@@ -58,14 +93,14 @@ func TestCatalogCommandJSONFailures(t *testing.T) {
 		args []string
 		want string
 	}{
-		{name: "missing URL", args: []string{"--format=json"}, want: "missing required option"},
+		{name: "unknown flag", args: []string{"--format=json", "--unknown"}, want: "flag provided but not defined"},
 		{name: "sync error", args: []string{"--url=https://static.example/problems/", "--format=json"}, want: "network unavailable"},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			var output, stderr bytes.Buffer
 			err := catalogCommandWithIO(context.Background(), "prosetta catalog", test.args, &output,
 				func(context.Context, string, string) (string, error) {
-					if test.name == "missing URL" {
+					if test.name == "unknown flag" {
 						t.Fatal("sync called after parse failure")
 					}
 					return "", errors.New("network unavailable")

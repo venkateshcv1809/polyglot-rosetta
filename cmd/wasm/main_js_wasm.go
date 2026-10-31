@@ -6,6 +6,7 @@ package main
 import (
 	"syscall/js"
 
+	catalogcmd "polyglot-rosetta/internal/commands/catalog"
 	probecmd "polyglot-rosetta/internal/commands/probe"
 	versioncmd "polyglot-rosetta/internal/commands/version"
 	"polyglot-rosetta/internal/wasm"
@@ -13,8 +14,10 @@ import (
 
 func main() {
 	core := js.Global().Get("Object").New()
+	store := &wasm.CatalogStore{}
 	bindings := []wasm.Binding{
 		wasm.Bind(),
+		catalogcmd.WASM(store),
 		probecmd.WASM(),
 		versioncmd.WASM(),
 	}

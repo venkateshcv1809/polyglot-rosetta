@@ -7,6 +7,9 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	catalogsync "polyglot-rosetta/internal/catalog/sync"
+	"polyglot-rosetta/internal/version"
 )
 
 func TestCommand(t *testing.T) {
@@ -17,15 +20,25 @@ func TestCommand(t *testing.T) {
 }
 
 func TestParseOptions(t *testing.T) {
+	previous := version.Value
+	t.Cleanup(func() { version.Value = previous })
+	version.Value = "dev"
 	t.Setenv("PROSETTA_CATALOG_URL", "")
 	cache := useTestCatalogCache(t)
-	if _, err := parseOptions("prosetta catalog", nil); err == nil || !strings.Contains(err.Error(), "--url") {
-		t.Fatalf("missing URL error = %v", err)
+	opts, err := parseOptions("prosetta catalog", nil)
+	if err != nil || opts.url != "" {
+		t.Fatalf("dev default URL = %+v, error = %v", opts, err)
 	}
+	version.Value = "v0.1.0"
+	opts, err = parseOptions("prosetta catalog", nil)
+	if err != nil || opts.url != catalogsync.DefaultURL {
+		t.Fatalf("released default URL = %+v, error = %v", opts, err)
+	}
+	version.Value = previous
 	if _, err := parseOptions("prosetta catalog", []string{"-h"}); !errors.Is(err, flag.ErrHelp) {
 		t.Fatalf("help error = %v", err)
 	}
-	opts, err := parseOptions("prosetta catalog", []string{"--url=https://example.test/problems/"})
+	opts, err = parseOptions("prosetta catalog", []string{"--url=https://example.test/problems/"})
 	if err != nil || opts.url != "https://example.test/problems/" || opts.cache != cache {
 		t.Fatalf("options = %+v, error = %v", opts, err)
 	}
@@ -51,7 +64,6 @@ func TestParseOptionsJSONErrorsDoNotPrintUsage(t *testing.T) {
 	t.Setenv("PROSETTA_CATALOG_URL", "")
 	useTestCatalogCache(t)
 	for _, args := range [][]string{
-		{"--format=json"},
 		{"--format", "json", "--unknown"},
 	} {
 		var output bytes.Buffer
