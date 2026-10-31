@@ -111,6 +111,9 @@ lint:
     @echo "Running static analysis..."
     go vet ./...
 
+# Pre-commit and local quality gate (matches CI vet + race tests)
+check-go: lint test-race
+
 # Versioned public binary, WASM core, and hashed catalog for v* tags
 release: build-cli build-internal build-wasm build-bundle
 	cp {{BIN_DIR}}/prosetta {{BIN_DIR}}/prosetta-"$({{BIN_DIR}}/prosetta version)"
