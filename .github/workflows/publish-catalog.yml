@@ -34,11 +34,21 @@ jobs:
           fi
           mise exec -- just release-catalog
 
-      - name: Stage catalog Pages
+      - name: Prepare Catalog File Listing
+        run: |
+          mkdir -p .github/pages/_data
+          cp dist/problems/manifest.json .github/pages/_data/catalog.json
+
+      - name: Build Catalog Pages
+        uses: actions/jekyll-build-pages@v1
+        with:
+          source: .github/pages
+          destination: _site
+
+      - name: Stage Catalog Downloads
         run: |
           mkdir -p _site/catalog
           cp dist/problems/* _site/catalog/
-          touch _site/.nojekyll _site/catalog/.nojekyll
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
