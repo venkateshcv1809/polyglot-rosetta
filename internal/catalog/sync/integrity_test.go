@@ -11,13 +11,15 @@ import (
 
 	catalogbundle "polyglot-rosetta/internal/catalog/bundle"
 	"polyglot-rosetta/internal/config"
+	"polyglot-rosetta/internal/testfixture"
 )
 
 func TestSyncRechecksAssetsOfActiveSnapshot(t *testing.T) {
 	for _, name := range []string{config.CatalogIndexFileName, config.TemplatesArchiveName, "fundamentals" + config.CategoryArchiveSuffix} {
 		t.Run(name, func(t *testing.T) {
 			output, cache := t.TempDir(), t.TempDir()
-			if err := catalogbundle.Build("../../../problems", "../../../templates", output); err != nil {
+			problems, templates := testfixture.Catalog(t)
+			if err := catalogbundle.Build(problems, templates, output); err != nil {
 				t.Fatal(err)
 			}
 			fetched := map[string]int{}
@@ -51,7 +53,8 @@ func TestSyncRechecksAssetsOfActiveSnapshot(t *testing.T) {
 
 func TestSyncRejectsCorruptReplacementWithActiveSnapshot(t *testing.T) {
 	output, cache := t.TempDir(), t.TempDir()
-	if err := catalogbundle.Build("../../../problems", "../../../templates", output); err != nil {
+	problems, templates := testfixture.Catalog(t)
+	if err := catalogbundle.Build(problems, templates, output); err != nil {
 		t.Fatal(err)
 	}
 	useArchiveTransport(t, output, false, map[string]int{})

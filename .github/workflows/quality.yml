@@ -40,13 +40,6 @@ jobs:
       - name: Build WASM Core
         run: mise exec -- just build-wasm
 
-      - name: Check Test Inputs
-        run: |
-          if [ ! -f problems/info.json ]; then
-            echo "::error file=problems/info.json::Required catalog test sources are not in this checkout. Commit them before expecting the full CI checks to pass."
-            exit 1
-          fi
-
       - name: Run Go Race Tests with Coverage
         run: mise exec -- go test -race -covermode=atomic -coverprofile=coverage.out ./...
 

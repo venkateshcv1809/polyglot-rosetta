@@ -97,7 +97,6 @@ test:
 
 # Run Go WASM unit and integration tests through Go's Node runtime wrapper
 test-wasm:
-	@test -f problems/info.json || { echo "Missing problems/info.json: add the catalog test sources before running this check." >&2; exit 1; }
 	GOOS=js GOARCH=wasm go test -v -timeout=90s -exec="env -i PATH=$(dirname "$(command -v node)"):/usr/bin:/bin $(go env GOROOT)/lib/wasm/go_js_wasm_exec" ./cmd/wasm ./internal/wasm
 
 # Run Go tests with the race detector

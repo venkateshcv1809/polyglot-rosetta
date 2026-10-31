@@ -14,6 +14,7 @@ import (
 	"testing"
 
 	catalogbundle "polyglot-rosetta/internal/catalog/bundle"
+	"polyglot-rosetta/internal/testfixture"
 	"polyglot-rosetta/internal/version"
 )
 
@@ -43,7 +44,8 @@ func useArchiveTransport(t *testing.T, output string, tamper bool, fetched map[s
 
 func TestSyncActivatesVerifiedBundleAndReusesAssets(t *testing.T) {
 	output := t.TempDir()
-	if err := catalogbundle.Build("../../../problems", "../../../templates", output); err != nil {
+	problems, templates := testfixture.Catalog(t)
+	if err := catalogbundle.Build(problems, templates, output); err != nil {
 		t.Fatalf("Build: %v", err)
 	}
 	fetched := map[string]int{}
@@ -106,9 +108,33 @@ func TestSyncActivatesVerifiedBundleAndReusesAssets(t *testing.T) {
 	}
 }
 
+func TestSyncActivatesEmptyCatalog(t *testing.T) {
+	problems, templates, output, cache := t.TempDir(), t.TempDir(), t.TempDir(), t.TempDir()
+	if err := os.WriteFile(filepath.Join(problems, "info.json"), []byte(`{"id":"root","title":"Empty catalog","items":[]}`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := catalogbundle.Build(problems, templates, output); err != nil {
+		t.Fatal(err)
+	}
+	fetched := map[string]int{}
+	useArchiveTransport(t, output, false, fetched)
+	root, err := Sync(context.Background(), "https://static.example/problems/", cache)
+	if err != nil {
+		t.Fatal(err)
+	}
+	active, ready, err := ActiveProblemsDir(cache)
+	if err != nil || !ready || active != root {
+		t.Fatalf("empty catalog was not activated: %q, %t, %v", active, ready, err)
+	}
+	if len(fetched) != 3 || fetched["manifest.json"] != 1 || fetched["index.json"] != 1 || fetched["templates.tar.gz"] != 1 {
+		t.Fatalf("unexpected empty catalog fetches: %+v", fetched)
+	}
+}
+
 func TestSyncRejectsIncompatibleEngine(t *testing.T) {
 	output := t.TempDir()
-	if err := catalogbundle.Build("../../../problems", "../../../templates", output); err != nil {
+	problems, templates := testfixture.Catalog(t)
+	if err := catalogbundle.Build(problems, templates, output); err != nil {
 		t.Fatal(err)
 	}
 	manifestPath := filepath.Join(output, "manifest.json")
@@ -143,7 +169,8 @@ func TestSyncRejectsIncompatibleEngine(t *testing.T) {
 
 func TestSyncRejectsTamperedArchiveWithoutActivating(t *testing.T) {
 	output := t.TempDir()
-	if err := catalogbundle.Build("../../../problems", "../../../templates", output); err != nil {
+	problems, templates := testfixture.Catalog(t)
+	if err := catalogbundle.Build(problems, templates, output); err != nil {
 		t.Fatal(err)
 	}
 	useArchiveTransport(t, output, true, map[string]int{})

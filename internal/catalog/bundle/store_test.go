@@ -7,11 +7,13 @@ import (
 	"testing"
 
 	"polyglot-rosetta/internal/catalog"
+	"polyglot-rosetta/internal/testfixture"
 )
 
 func TestStoreActivationAndReuse(t *testing.T) {
 	output := t.TempDir()
-	if err := Build("../../../problems", "../../../templates", output); err != nil {
+	problems, templateRoot := testfixture.Catalog(t)
+	if err := Build(problems, templateRoot, output); err != nil {
 		t.Fatal(err)
 	}
 	read := func(name string) []byte {

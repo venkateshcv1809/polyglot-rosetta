@@ -13,11 +13,14 @@ import (
 	"testing"
 
 	"polyglot-rosetta/internal/catalog"
+	"polyglot-rosetta/internal/testfixture"
+	"polyglot-rosetta/internal/version"
 )
 
 func TestBuildCreatesCategoryAndTemplateArchives(t *testing.T) {
 	output := t.TempDir()
-	if err := Build("../../../problems", "../../../templates", output); err != nil {
+	problems, templates := testfixture.Catalog(t)
+	if err := Build(problems, templates, output); err != nil {
 		t.Fatalf("Build: %v", err)
 	}
 	var manifest Manifest
@@ -31,7 +34,7 @@ func TestBuildCreatesCategoryAndTemplateArchives(t *testing.T) {
 	if _, err := ParseManifest(data); err != nil {
 		t.Fatalf("ParseManifest: %v", err)
 	}
-	if manifest.SchemaVersion != 1 || manifest.MinEngine != "v0.1.0" || manifest.Index.Path != "index.json" || manifest.Templates.Path != "templates.tar.gz" || len(manifest.Categories) != 1 || manifest.Categories[0].Path != "fundamentals.tar.gz" {
+	if manifest.SchemaVersion != 1 || manifest.MinEngine != version.MinimumEngine() || manifest.Index.Path != "index.json" || manifest.Templates.Path != "templates.tar.gz" || len(manifest.Categories) != 1 || manifest.Categories[0].Path != "fundamentals.tar.gz" {
 		t.Fatalf("manifest = %+v", manifest)
 	}
 	for _, asset := range append([]Asset{manifest.Index, manifest.Templates}, manifest.Categories...) {
@@ -99,12 +102,44 @@ func TestBuildCreatesCategoryAndTemplateArchives(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := Build("../../../problems", "../../../templates", output); err != nil {
+	if err := Build(problems, templates, output); err != nil {
 		t.Fatalf("second Build: %v", err)
 	}
 	second, err := os.ReadFile(filepath.Join(output, "fundamentals.tar.gz"))
 	if err != nil || !reflect.DeepEqual(first, second) {
 		t.Fatalf("archive is not deterministic: %v", err)
+	}
+}
+
+func TestBuildAndLoadEmptyCatalog(t *testing.T) {
+	problems, templates, output := t.TempDir(), t.TempDir(), t.TempDir()
+	if err := os.WriteFile(filepath.Join(problems, "info.json"), []byte(`{"id":"root","title":"Empty catalog","items":[]}`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := Build(problems, templates, output); err != nil {
+		t.Fatal(err)
+	}
+	read := func(name string) []byte {
+		t.Helper()
+		data, err := os.ReadFile(filepath.Join(output, name))
+		if err != nil {
+			t.Fatal(err)
+		}
+		return data
+	}
+	manifest, err := ParseManifest(read("manifest.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(manifest.Categories) != 0 {
+		t.Fatalf("empty catalog has category archives: %+v", manifest.Categories)
+	}
+	loaded, err := Load(read("index.json"), read("templates.tar.gz"), map[string][]byte{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if loaded.Catalog.Title != "Empty catalog" || len(loaded.Catalog.Categories) != 0 || len(loaded.Catalog.ConceptsByID) != 0 {
+		t.Fatalf("unexpected empty catalog: %+v", loaded.Catalog)
 	}
 }
 

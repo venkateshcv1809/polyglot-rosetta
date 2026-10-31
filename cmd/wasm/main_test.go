@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"polyglot-rosetta/internal/catalog/bundle"
+	"polyglot-rosetta/internal/testfixture"
 	"polyglot-rosetta/internal/version"
 	"polyglot-rosetta/internal/wasm"
 )
@@ -345,7 +346,8 @@ func (f *wasmFixture) bind(t *testing.T, overrides map[string]any) {
 func (f *wasmFixture) loadBundle(t *testing.T) {
 	t.Helper()
 	output := t.TempDir()
-	if err := bundle.Build("../../problems", "../../templates", output); err != nil {
+	problems, templates := testfixture.Catalog(t)
+	if err := bundle.Build(problems, templates, output); err != nil {
 		t.Fatal(err)
 	}
 	read := func(name string) []byte {
