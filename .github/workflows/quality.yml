@@ -1,0 +1,69 @@
+name: Quality Checks
+
+on:
+  push:
+    branches:
+      - develop
+      - main
+  pull_request:
+    branches:
+      - develop
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: quality-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: Test and Analyze
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Install Project Toolchains
+        uses: jdx/mise-action@v4
+
+      - name: Vet Go Packages
+        run: mise exec -- go vet ./...
+
+      - name: Build Native Commands
+        run: mise exec -- just build-cli build-internal
+
+      - name: Build WASM Core
+        run: mise exec -- just build-wasm
+
+      - name: Check Test Inputs
+        run: |
+          if [ ! -f problems/info.json ]; then
+            echo "::error file=problems/info.json::Required catalog test sources are not in this checkout. Commit them before expecting the full CI checks to pass."
+            exit 1
+          fi
+
+      - name: Run Go Race Tests with Coverage
+        run: mise exec -- go test -race -covermode=atomic -coverprofile=coverage.out ./...
+
+      - name: Check Go Coverage
+        env:
+          MIN_GO_COVERAGE: '70'
+        run: |
+          total="$(mise exec -- go tool cover -func=coverage.out | awk '/^total:/ { gsub(/%/, "", $3); print $3 }')"
+          if [ -z "$total" ]; then
+            echo "::error::Unable to determine total Go coverage."
+            exit 1
+          fi
+          awk -v total="$total" -v minimum="$MIN_GO_COVERAGE" 'BEGIN {
+            printf "Total Go coverage: %.1f%% (minimum %.1f%%)\n", total, minimum
+            if (total + 0 < minimum + 0) {
+              print "::error::Go coverage is below the required minimum."
+              exit 1
+            }
+          }'
+
+      - name: Check WASM Bindings
+        run: mise exec -- just test-wasm

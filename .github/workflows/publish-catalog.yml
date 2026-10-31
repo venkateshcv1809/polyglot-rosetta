@@ -1,0 +1,59 @@
+name: Publish Catalog
+
+on:
+  push:
+    branches:
+      - develop
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+  queue: max
+
+jobs:
+  build:
+    name: Build Catalog Assets
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Install Project Toolchains
+        uses: jdx/mise-action@v4
+
+      - name: Build Catalog
+        run: |
+          if [ ! -f problems/info.json ]; then
+            echo "::error file=problems/info.json::Catalog sources are required for publishing. Add the authoring catalog to this branch before publishing it."
+            exit 1
+          fi
+          mise exec -- just release-catalog
+
+      - name: Stage catalog Pages
+        run: |
+          mkdir -p _site/catalog
+          cp dist/problems/* _site/catalog/
+          touch _site/.nojekyll _site/catalog/.nojekyll
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    name: Deploy Catalog to GitHub Pages
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
