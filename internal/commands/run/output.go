@@ -28,7 +28,7 @@ type testDisplay struct {
 type resultDisplay struct {
 	Concept       string
 	Language      string
-	Cases         runapi.Mode
+	Cases         evaluation.Mode
 	Status        string
 	Passed        int
 	Total         int

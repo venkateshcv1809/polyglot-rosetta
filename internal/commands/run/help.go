@@ -3,7 +3,7 @@
 package runcmd
 
 import (
-	runapi "polyglot-rosetta/internal/api/run"
+	"polyglot-rosetta/internal/domain/evaluation"
 	"polyglot-rosetta/internal/wasm"
 )
 
@@ -17,7 +17,7 @@ func wasmHelp() wasm.MethodHelp {
 			{Name: "id", Type: "string", Required: true, Description: "Full concept ID or unique prefix of at least eight hexadecimal digits."},
 			{Name: "language", Type: "string", Required: true, Description: "Supported language; surrounding whitespace and case are normalized."},
 			{Name: "source", Type: "string", Required: true, Description: "Non-empty solution source code, not a file path."},
-			{Name: "mode", Type: "string", Default: string(runapi.ModePublic), Values: []string{string(runapi.ModePublic), string(runapi.ModeAll)}, Description: "public selects visible cases; all also includes hidden cases."},
+			{Name: "mode", Type: "string", Default: string(evaluation.ModePublic), Values: []string{string(evaluation.ModePublic), string(evaluation.ModeAll)}, Description: "public selects visible cases; all also includes hidden cases."},
 		}}},
 		Callbacks: []string{"ensureAvailable", "execute"},
 		Returns:   "Promise<RunResult> {schema_version, id, language, mode, status, total_passed, total_failed, duration_ms, test_results, error?}",

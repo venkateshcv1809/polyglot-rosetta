@@ -43,7 +43,7 @@ func EvaluateSuiteWithTimeout(ctx context.Context, request domainevaluation.Requ
 	if suite == nil {
 		return Evaluation{}, fmt.Errorf("test suite cannot be nil")
 	}
-	testCases := suite.GetTestCases(request.IsSubmit)
+	testCases := suite.GetTestCases(request.Mode.IncludeHidden())
 	if len(testCases) == 0 {
 		return Evaluation{}, fmt.Errorf("concept %q has no selected test cases", suite.Concept)
 	}

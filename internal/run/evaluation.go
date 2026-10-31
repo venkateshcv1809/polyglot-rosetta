@@ -38,7 +38,6 @@ func Evaluate(ctx context.Context, request runapi.Request, concept Concept) (eng
 		return engine.Evaluation{}, err
 	}
 	return engine.EvaluateSuite(ctx, evaluation.Request{
-		Language: lang, SourceCode: request.Source,
-		IsSubmit: request.Mode == runapi.ModeAll,
+		Language: lang, SourceCode: request.Source, Mode: request.Mode,
 	}, suite)
 }

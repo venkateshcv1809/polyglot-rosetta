@@ -2,12 +2,13 @@ package run
 
 import (
 	runapi "polyglot-rosetta/internal/api/run"
+	"polyglot-rosetta/internal/domain/evaluation"
 	"polyglot-rosetta/internal/domain/language"
 )
 
 // Prepare resolves a registered concept and chooses explicit or catalog source.
 // It returns the resolved concept even when source loading or validation fails.
-func Prepare(id, languageName string, mode runapi.Mode, source *string) (runapi.Request, Concept, error) {
+func Prepare(id, languageName string, mode evaluation.Mode, source *string) (runapi.Request, Concept, error) {
 	concept, err := ResolveConcept(id)
 	if err != nil {
 		return runapi.Request{}, Concept{}, err

@@ -6,25 +6,16 @@ import (
 	"strings"
 
 	"polyglot-rosetta/internal/catalog"
+	"polyglot-rosetta/internal/domain/evaluation"
 	"polyglot-rosetta/internal/domain/language"
-)
-
-// Mode controls which testcases participate in an evaluation.
-type Mode string
-
-const (
-	// ModePublic evaluates only cases intended for normal practice.
-	ModePublic Mode = "public"
-	// ModeAll evaluates every locally available testcase.
-	ModeAll Mode = "all"
 )
 
 // Request is the transport-neutral input accepted by native and browser hosts.
 type Request struct {
-	ID       string `json:"id"`
-	Language string `json:"language"`
-	Source   string `json:"source"`
-	Mode     Mode   `json:"mode"`
+	ID       string          `json:"id"`
+	Language string          `json:"language"`
+	Source   string          `json:"source"`
+	Mode     evaluation.Mode `json:"mode"`
 }
 
 // Validate reports whether the request can be passed to an execution backend.
@@ -38,8 +29,8 @@ func (r Request) Validate() error {
 	if strings.TrimSpace(r.Source) == "" {
 		return fmt.Errorf("source code cannot be empty")
 	}
-	if r.Mode != ModePublic && r.Mode != ModeAll {
-		return fmt.Errorf("mode must be %q or %q", ModePublic, ModeAll)
+	if r.Mode != evaluation.ModePublic && r.Mode != evaluation.ModeAll {
+		return fmt.Errorf("mode must be %q or %q", evaluation.ModePublic, evaluation.ModeAll)
 	}
 	return nil
 }

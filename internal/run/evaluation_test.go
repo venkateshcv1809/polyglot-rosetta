@@ -9,6 +9,7 @@ import (
 
 	runapi "polyglot-rosetta/internal/api/run"
 	"polyglot-rosetta/internal/catalog"
+	"polyglot-rosetta/internal/domain/evaluation"
 	"polyglot-rosetta/internal/toolchain"
 )
 
@@ -27,15 +28,15 @@ func TestEvaluateResolvedConcept(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	evaluation, err := Evaluate(context.Background(), runapi.Request{
-		ID: id, Language: "go", Source: source, Mode: runapi.ModePublic,
+	evaluated, err := Evaluate(context.Background(), runapi.Request{
+		ID: id, Language: "go", Source: source, Mode: evaluation.ModePublic,
 	}, concept)
-	if err != nil || !evaluation.Report.PassedAll || evaluation.Report.TotalTests != 1 {
-		t.Fatalf("evaluation = %+v, error = %v", evaluation, err)
+	if err != nil || !evaluated.Report.PassedAll || evaluated.Report.TotalTests != 1 {
+		t.Fatalf("evaluation = %+v, error = %v", evaluated, err)
 	}
 	otherID, _ := catalog.ConceptID("objects/traversal")
 	if _, err := Evaluate(context.Background(), runapi.Request{
-		ID: otherID, Language: "go", Source: source, Mode: runapi.ModePublic,
+		ID: otherID, Language: "go", Source: source, Mode: evaluation.ModePublic,
 	}, concept); err == nil || !strings.Contains(err.Error(), "does not match") {
 		t.Fatalf("mismatched concept error = %v", err)
 	}
@@ -56,7 +57,7 @@ func TestEvaluateStopsBeforeLoadingCasesWhenToolchainIsUnavailable(t *testing.T)
 		t.Fatal(err)
 	}
 	_, err = Evaluate(context.Background(), runapi.Request{
-		ID: id, Language: "go", Source: "invalid source", Mode: runapi.ModePublic,
+		ID: id, Language: "go", Source: "invalid source", Mode: evaluation.ModePublic,
 	}, concept)
 	if !errors.Is(err, toolchain.ErrUnavailable) {
 		t.Fatalf("error = %v, want cached unavailability", err)

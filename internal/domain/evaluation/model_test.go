@@ -11,7 +11,7 @@ func TestRequestJSONSerialization(t *testing.T) {
 	req := Request{
 		Language:   language.Go,
 		SourceCode: "package main\nfunc Add(a, b int) int { return a + b }",
-		IsSubmit:   true,
+		Mode:       ModeAll,
 	}
 
 	data, err := json.Marshal(req)
@@ -24,7 +24,7 @@ func TestRequestJSONSerialization(t *testing.T) {
 		t.Fatalf("Failed to unmarshal Request: %v", err)
 	}
 
-	if decoded.Language != req.Language || decoded.SourceCode != req.SourceCode || decoded.IsSubmit != req.IsSubmit {
+	if decoded.Language != req.Language || decoded.SourceCode != req.SourceCode || decoded.Mode != req.Mode {
 		t.Errorf("Decoded request does not match original: %+v", decoded)
 	}
 }

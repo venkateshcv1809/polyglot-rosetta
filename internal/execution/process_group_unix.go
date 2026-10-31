@@ -7,7 +7,6 @@ import (
 	"os"
 	"os/exec"
 	"syscall"
-	"time"
 )
 
 func configureProcessGroup(cmd *exec.Cmd) {
@@ -22,5 +21,5 @@ func configureProcessGroup(cmd *exec.Cmd) {
 		}
 		return err
 	}
-	cmd.WaitDelay = 250 * time.Millisecond
+	cmd.WaitDelay = defaultProcessWaitDelay
 }

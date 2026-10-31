@@ -1,13 +1,25 @@
 package run
 
-import "polyglot-rosetta/internal/domain/evaluation"
+import (
+	"polyglot-rosetta/internal/api"
+	"polyglot-rosetta/internal/domain/evaluation"
+)
+
+// Input source values describe how a native command obtained submitted code.
+// Browser requests supply source directly and therefore use InputSourceInline.
+const (
+	InputSourceInline  = "inline"
+	InputSourceStdin   = "stdin"
+	InputSourceCatalog = "catalog"
+)
 
 // Result is the structured outcome of one run request.
 type Result struct {
+	SchemaVersion   int               `json:"schema_version"`
 	ID              string            `json:"id"`
 	Concept         string            `json:"concept,omitempty"`
 	Language        string            `json:"language"`
-	Mode            Mode              `json:"mode"`
+	Mode            evaluation.Mode   `json:"mode"`
 	InputSource     string            `json:"input_source,omitempty"`
 	Status          evaluation.Status `json:"status"`
 	TotalPassed     int               `json:"total_passed"`
@@ -16,6 +28,11 @@ type Result struct {
 	BuildDurationMs *int64            `json:"build_duration_ms,omitempty"`
 	TestResults     []TestResult      `json:"test_results"`
 	Error           string            `json:"error,omitempty"`
+}
+
+// NewResult starts a run result on the current JSON contract.
+func NewResult() Result {
+	return Result{SchemaVersion: api.SchemaVersion, Status: evaluation.StatusError, TestResults: []TestResult{}}
 }
 
 // TestResult describes one selected test case without exposing its input.

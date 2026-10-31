@@ -99,11 +99,11 @@ func prepareRun(opts options, stdin io.Reader) (preparedRun, error) {
 	}
 	switch {
 	case opts.stdin:
-		prepared.result.InputSource = "stdin"
+		prepared.result.InputSource = runapi.InputSourceStdin
 	case opts.code != "":
-		prepared.result.InputSource = "inline"
+		prepared.result.InputSource = runapi.InputSourceInline
 	default:
-		prepared.result.InputSource = "catalog"
+		prepared.result.InputSource = runapi.InputSourceCatalog
 	}
 	prepared.request = request
 	return prepared, nil

@@ -6,8 +6,8 @@ import (
 	"strings"
 	"testing"
 
-	runapi "polyglot-rosetta/internal/api/run"
 	"polyglot-rosetta/internal/catalog"
+	"polyglot-rosetta/internal/domain/evaluation"
 )
 
 func TestPrepareChoosesCatalogOrExplicitSource(t *testing.T) {
@@ -22,7 +22,7 @@ func TestPrepareChoosesCatalogOrExplicitSource(t *testing.T) {
 		{name: "explicit", source: testString("custom source"), want: "custom source"},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			request, concept, err := Prepare(id[:10], "go", runapi.ModePublic, test.source)
+			request, concept, err := Prepare(id[:10], "go", evaluation.ModePublic, test.source)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -36,7 +36,7 @@ func TestPrepareChoosesCatalogOrExplicitSource(t *testing.T) {
 func TestPreparePreservesConceptWhenSolutionIsMissing(t *testing.T) {
 	t.Setenv(catalogEnvironment, writePracticeCatalog(t))
 	id, _ := catalog.ConceptID("fundamentals/hello-world")
-	_, concept, err := Prepare(id, "python", runapi.ModePublic, nil)
+	_, concept, err := Prepare(id, "python", evaluation.ModePublic, nil)
 	if !errors.Is(err, os.ErrNotExist) || concept.ID != id {
 		t.Fatalf("concept = %+v, error = %v", concept, err)
 	}

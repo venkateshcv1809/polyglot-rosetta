@@ -9,14 +9,15 @@ import (
 )
 
 func initialResult(opts options) runapi.Result {
-	mode := runapi.ModePublic
+	mode := evaluation.ModePublic
 	if opts.all {
-		mode = runapi.ModeAll
+		mode = evaluation.ModeAll
 	}
-	return runapi.Result{
-		ID: opts.id, Language: opts.language, Mode: mode,
-		Status: evaluation.StatusError, TestResults: []runapi.TestResult{},
-	}
+	result := runapi.NewResult()
+	result.ID = opts.id
+	result.Language = opts.language
+	result.Mode = mode
+	return result
 }
 
 func resultFromEvaluation(result runapi.Result, evaluated engine.Evaluation) runapi.Result {

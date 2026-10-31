@@ -66,7 +66,7 @@ func TestEvaluatePythonIncludesHiddenCases(t *testing.T) {
 	source := "class Solution:\n    def solve(self, input_data):\n        return 'Hello ' + input_data['name']\n"
 
 	evaluation, err := EvaluateSuite(context.Background(), domainevaluation.Request{
-		Language: language.Python, SourceCode: source, IsSubmit: true,
+		Language: language.Python, SourceCode: source, Mode: domainevaluation.ModeAll,
 	}, suite)
 	if err != nil {
 		t.Fatalf("Evaluate: %v", err)
@@ -192,7 +192,7 @@ func TestEvaluateContinuesAfterCrashForEveryLanguage(t *testing.T) {
 				}
 			}
 			evaluation, err := EvaluateSuite(context.Background(), domainevaluation.Request{
-				Language: test.language, SourceCode: test.sourceCode, IsSubmit: true,
+				Language: test.language, SourceCode: test.sourceCode, Mode: domainevaluation.ModeAll,
 			}, suite)
 			if err != nil {
 				t.Fatalf("EvaluateSuite: %v", err)

@@ -4,9 +4,8 @@ package execution
 
 import (
 	"os/exec"
-	"time"
 )
 
 func configureProcessGroup(cmd *exec.Cmd) {
-	cmd.WaitDelay = 250 * time.Millisecond
+	cmd.WaitDelay = defaultProcessWaitDelay
 }

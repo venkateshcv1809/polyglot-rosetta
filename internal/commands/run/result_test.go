@@ -4,14 +4,13 @@ import (
 	"testing"
 	"time"
 
-	runapi "polyglot-rosetta/internal/api/run"
 	"polyglot-rosetta/internal/domain/evaluation"
 	engine "polyglot-rosetta/internal/execution"
 )
 
 func TestInitialResult(t *testing.T) {
 	result := initialResult(options{id: "c-12345678", language: "go", all: true})
-	if result.ID != "c-12345678" || result.Language != "go" || result.Mode != runapi.ModeAll || result.Status != evaluation.StatusError || result.TestResults == nil {
+	if result.SchemaVersion != 1 || result.ID != "c-12345678" || result.Language != "go" || result.Mode != evaluation.ModeAll || result.Status != evaluation.StatusError || result.TestResults == nil {
 		t.Fatalf("initial result = %+v", result)
 	}
 }

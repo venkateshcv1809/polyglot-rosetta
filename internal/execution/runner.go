@@ -8,7 +8,10 @@ import (
 	"time"
 )
 
-const defaultCommandOutputLimit = 1 << 20
+const (
+	defaultCommandOutputLimit = 1 << 20
+	defaultProcessWaitDelay   = 250 * time.Millisecond
+)
 
 // Command describes a child process executed by the evaluation engine.
 type Command struct {

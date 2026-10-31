@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"polyglot-rosetta/internal/catalog"
+	"polyglot-rosetta/internal/domain/evaluation"
 )
 
 func TestRequestValidate(t *testing.T) {
@@ -17,20 +18,20 @@ func TestRequestValidate(t *testing.T) {
 		{
 			name: "valid public request",
 			request: Request{
-				ID: helloID, Language: "go", Source: "package main", Mode: ModePublic,
+				ID: helloID, Language: "go", Source: "package main", Mode: evaluation.ModePublic,
 			},
 		},
 		{
 			name: "valid full request",
 			request: Request{
-				ID: arrayID, Language: "python", Source: "def solve(): pass", Mode: ModeAll,
+				ID: arrayID, Language: "python", Source: "def solve(): pass", Mode: evaluation.ModeAll,
 			},
 		},
-		{name: "invalid ID", request: Request{ID: "../secret", Language: "go", Source: "x", Mode: ModePublic}, wantErr: true},
-		{name: "path instead of ID", request: Request{ID: "arrays/traversal", Language: "go", Source: "x", Mode: ModePublic}, wantErr: true},
-		{name: "short ID", request: Request{ID: helloID[:10], Language: "go", Source: "x", Mode: ModePublic}},
-		{name: "invalid language", request: Request{ID: helloID, Language: "ruby", Source: "x", Mode: ModePublic}, wantErr: true},
-		{name: "empty source", request: Request{ID: helloID, Language: "go", Source: " ", Mode: ModePublic}, wantErr: true},
+		{name: "invalid ID", request: Request{ID: "../secret", Language: "go", Source: "x", Mode: evaluation.ModePublic}, wantErr: true},
+		{name: "path instead of ID", request: Request{ID: "arrays/traversal", Language: "go", Source: "x", Mode: evaluation.ModePublic}, wantErr: true},
+		{name: "short ID", request: Request{ID: helloID[:10], Language: "go", Source: "x", Mode: evaluation.ModePublic}},
+		{name: "invalid language", request: Request{ID: helloID, Language: "ruby", Source: "x", Mode: evaluation.ModePublic}, wantErr: true},
+		{name: "empty source", request: Request{ID: helloID, Language: "go", Source: " ", Mode: evaluation.ModePublic}, wantErr: true},
 		{name: "invalid mode", request: Request{ID: helloID, Language: "go", Source: "x", Mode: "hidden"}, wantErr: true},
 	}
 

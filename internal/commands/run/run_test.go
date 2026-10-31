@@ -245,7 +245,7 @@ func (Solution) Solve(any) any { panic("boom") }
 			if decoder.More() || output.Len() != 0 {
 				t.Fatalf("unexpected trailing output: %q", output.String())
 			}
-			if result.ID != id || result.Concept != "fundamentals/hello-world" || result.Language != "go" || result.Mode != runapi.ModePublic || result.InputSource != "inline" || result.Status != test.wantStatus {
+			if result.ID != id || result.Concept != "fundamentals/hello-world" || result.Language != "go" || result.Mode != evaluation.ModePublic || result.InputSource != "inline" || result.Status != test.wantStatus {
 				t.Fatalf("result = %+v", result)
 			}
 			if test.wantStatus == evaluation.StatusError {
@@ -294,7 +294,7 @@ func (Solution) Solve(input any) any { return "Hello " + input.(map[string]any)[
 	if err := json.Unmarshal(output.Bytes(), &result); err != nil {
 		t.Fatalf("decode JSON: %v; output = %q", err, output.String())
 	}
-	if result.ID != id || result.InputSource != "stdin" || result.Mode != runapi.ModeAll || result.Status != evaluation.StatusPassed {
+	if result.ID != id || result.InputSource != "stdin" || result.Mode != evaluation.ModeAll || result.Status != evaluation.StatusPassed {
 		t.Fatalf("result = %+v", result)
 	}
 }

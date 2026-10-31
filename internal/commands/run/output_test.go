@@ -14,7 +14,7 @@ func TestWriteEvaluationText(t *testing.T) {
 	var output bytes.Buffer
 	buildDurationMs := int64(125)
 	result := runapi.Result{
-		Concept: "fundamentals/hello-world", Language: "go", Mode: runapi.ModePublic,
+		Concept: "fundamentals/hello-world", Language: "go", Mode: evaluation.ModePublic,
 		InputSource: "stdin", Status: evaluation.StatusFailed, TotalFailed: 1, DurationMs: 150, BuildDurationMs: &buildDurationMs,
 		TestResults: []runapi.TestResult{{ID: "case-1", Status: evaluation.TestWrongAnswer, Hidden: true, Message: "wrong result", SolutionTimeNs: 1200}},
 	}
@@ -65,7 +65,7 @@ func TestWriteEvaluationOmitsSummaryOnError(t *testing.T) {
 func TestWriteEvaluationPassedText(t *testing.T) {
 	var output bytes.Buffer
 	result := runapi.Result{
-		Concept: "two-sum", Language: "python", Mode: runapi.ModeAll, InputSource: "catalog",
+		Concept: "two-sum", Language: "python", Mode: evaluation.ModeAll, InputSource: "catalog",
 		Status: evaluation.StatusPassed, TotalPassed: 1, DurationMs: 42,
 		TestResults: []runapi.TestResult{{ID: "case-1", Status: evaluation.TestPassed, Passed: true, SolutionTimeNs: 900}},
 	}
