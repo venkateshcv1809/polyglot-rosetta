@@ -1,0 +1,53 @@
+# Internal Cache & Generated Files
+.index.json
+/tmp/
+
+# OS & Editor Files
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+.idea/
+.vscode/
+.zed/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+env/
+venv/
+.pytest_cache/
+.ruff_cache/
+
+# Node / TypeScript
+node_modules/
+dist/
+out/
+.npm/
+*.tsbuildinfo
+
+# Go
+/bin/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+
+# Rust
+/target/
+**/*.rs.bk
+*.rlib
+
+# Zig
+/zig-cache/
+/zig-out/
+.zig-cache/
+
+# Mise / Toolchains
+.mise.local.toml

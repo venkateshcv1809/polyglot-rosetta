@@ -1,0 +1,6 @@
+
+{{if .Cleared}}OK:
+  Toolchain cache cleared
+{{else}}Toolchains:
+{{range .Rows}}  {{printf "%-4s" .Status}}  {{printf "%-12s" .Language}}  {{.Details}}
+{{end}}{{end -}}

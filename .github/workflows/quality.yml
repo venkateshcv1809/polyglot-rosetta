@@ -1,0 +1,94 @@
+name: Quality Checks
+
+on:
+  workflow_call:
+  workflow_dispatch:
+  merge_group:
+  push:
+    branches:
+      - develop
+      - main
+  pull_request:
+    branches:
+      - develop
+      - main
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  GOFLAGS: -mod=readonly
+  GOTOOLCHAIN: local
+
+concurrency:
+  group: quality-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: Test and Analyze
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Install Project Toolchains
+        uses: jdx/mise-action@v4
+        with:
+          version: '2026.10.25'
+          install_args: --locked
+
+      - name: Lint GitHub Workflows
+        run: go run github.com/rhysd/actionlint/cmd/actionlint@v1.7.12 -color
+
+      - name: Vet Go Packages
+        run: mise exec -- go vet ./...
+
+      - name: Build Native Commands
+        run: mise exec -- just build-cli build-internal
+
+      - name: Build WASM Core
+        run: mise exec -- just build-wasm
+
+      - name: Validate Catalog Packaging
+        run: mise exec -- just release-catalog
+
+      - name: Run Go Race Tests with Coverage
+        run: mise exec -- go test -race -covermode=atomic -coverprofile=coverage.out ./...
+
+      - name: Check Go Coverage
+        env:
+          MIN_GO_COVERAGE: '70'
+        run: |
+          total="$(mise exec -- go tool cover -func=coverage.out | awk '/^total:/ { gsub(/%/, "", $3); print $3 }')"
+          if [ -z "$total" ]; then
+            echo "::error::Unable to determine total Go coverage."
+            exit 1
+          fi
+          awk -v total="$total" -v minimum="$MIN_GO_COVERAGE" 'BEGIN {
+            printf "Total Go coverage: %.1f%% (minimum %.1f%%)\n", total, minimum
+            if (total + 0 < minimum + 0) {
+              print "::error::Go coverage is below the required minimum."
+              exit 1
+            }
+          }'
+
+      - name: Check WASM Bindings
+        run: mise exec -- just test-wasm
+
+      - name: Upload Coverage Report
+        if: always() && !cancelled()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-${{ github.run_id }}-${{ github.run_attempt }}
+          path: coverage.out
+          if-no-files-found: ignore
+          retention-days: 14

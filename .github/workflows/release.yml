@@ -1,0 +1,128 @@
+name: Release Binaries
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  GOFLAGS: -mod=readonly
+  GOTOOLCHAIN: local
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  checks:
+    name: Release Quality Gate
+    uses: ./.github/workflows/quality.yml
+
+  build:
+    name: Build Release Assets
+    needs: checks
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    outputs:
+      prerelease: ${{ steps.version.outputs.prerelease }}
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Verify Release Commit Is on Main
+        run: |
+          if ! git merge-base --is-ancestor "$GITHUB_SHA" origin/main; then
+            echo "Release tag must point to a commit in main's history" >&2
+            exit 1
+          fi
+
+      - name: Install Project Toolchains
+        uses: jdx/mise-action@v4
+        with:
+          version: '2026.10.25'
+          install_args: --locked go just
+          cache: false
+
+      - name: Verify Release Tag
+        id: version
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          version="$(go run ./cmd/prosetta version)"
+          if [ "$RELEASE_TAG" != "$version" ]; then
+            echo "Release tag $RELEASE_TAG does not match embedded version $version" >&2
+            exit 1
+          fi
+          if [[ "${RELEASE_TAG%%+*}" == *-* ]]; then
+            echo 'prerelease=true' >> "$GITHUB_OUTPUT"
+          else
+            echo 'prerelease=false' >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Run Build Pipeline
+        run: mise exec -- just release
+
+      - name: Stage Release Assets and Checksums
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          mkdir -p release-assets
+          for target in linux-amd64 linux-arm64 darwin-amd64 darwin-arm64 windows-amd64 windows-arm64; do
+            extension=''
+            if [[ "$target" == windows-* ]]; then extension='.exe'; fi
+            cp "bin/prosetta-${RELEASE_TAG}-${target}${extension}" release-assets/
+          done
+          cp dist/prosetta.wasm dist/wasm_exec.js release-assets/
+          cd release-assets
+          sha256sum -- prosetta-* prosetta.wasm wasm_exec.js > SHA256SUMS
+          sha256sum --check SHA256SUMS
+
+      - name: Upload Release Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-assets
+          path: release-assets/
+          if-no-files-found: error
+          retention-days: 7
+
+  publish:
+    name: Publish Release
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - name: Download Release Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: release-assets
+          path: release-assets
+
+      - name: Verify Release Checksums
+        working-directory: release-assets
+        run: sha256sum --check SHA256SUMS
+
+      - name: Create Release and Upload Assets
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          prerelease: ${{ needs.build.outputs.prerelease == 'true' }}
+          make_latest: legacy
+          generate_release_notes: true
+          fail_on_unmatched_files: true
+          files: release-assets/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
