@@ -28,6 +28,8 @@ jobs:
 
       - name: Install Project Toolchains
         uses: jdx/mise-action@v4
+        with:
+          version: '2026.10.25'
 
       - name: Vet Go Packages
         run: mise exec -- go vet ./...

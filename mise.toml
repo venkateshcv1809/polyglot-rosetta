@@ -8,4 +8,5 @@ rust = "1.97.1"
 zig = "0.16.0"
 
 [settings]
-node.corepack = true
+# Python 3.12.2 predates upstream attestations; its lockfile pins the SHA-256.
+python.github_attestations = false
