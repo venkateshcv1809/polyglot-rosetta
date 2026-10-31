@@ -9,14 +9,13 @@ A cross-language coding catalog with a command-line tool and WebAssembly core.
 
 ## Catalog
 
-The catalog is updated whenever changes are pushed to `develop`.
-
-- [Browse catalog files](catalog/): a file-tree listing with direct download links.
-- [Manifest](catalog/manifest.json): available category archives, compatibility requirements, and integrity hashes.
-- [Catalog index](catalog/index.json): available categories and problem metadata.
-- [Starter templates](catalog/templates.tar.gz): shared starter code for supported languages.
-
-Category archives appear in the file listing when they are published.
+<ul>
+{% for file in site.static_files %}
+{% if file.path contains '/catalog/' %}
+  <li><a href="{{ file.path | relative_url | escape }}">{{ file.name | escape }}</a></li>
+{% endif %}
+{% endfor %}
+</ul>
 
 ## Downloads and source
 
