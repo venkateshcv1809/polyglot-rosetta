@@ -12,6 +12,7 @@ help:
 # ------------------------------------------------------------------------------
 BIN_DIR := "bin"
 DIST_DIR := "dist"
+RELEASE_TARGETS := "linux/amd64 linux/arm64 darwin/amd64 darwin/arm64 windows/amd64 windows/arm64"
 
 # ------------------------------------------------------------------------------
 # Build Targets
@@ -94,15 +95,21 @@ test:
     @echo "Running unit tests..."
     go test -v ./...
 
+# Run Go WASM unit and integration tests through Go's Node runtime wrapper
+test-wasm:
+	@test -f problems/info.json || { echo "Missing problems/info.json: add the catalog test sources before running this check." >&2; exit 1; }
+	GOOS=js GOARCH=wasm go test -v -timeout=90s -exec="env -i PATH=$(dirname "$(command -v node)"):/usr/bin:/bin $(go env GOROOT)/lib/wasm/go_js_wasm_exec" ./cmd/wasm ./internal/wasm
+
 # Run Go tests with the race detector
 test-race:
     @echo "Running unit tests with the race detector..."
     go test -race ./...
 
-# Run unit tests with code coverage analysis
+# Run race tests with CI coverage settings and generate local reports
 test-cover:
-    @echo "Running unit tests with coverage..."
-    go test -coverprofile=coverage.out ./...
+    @echo "Running unit tests with the race detector and coverage..."
+    go test -race -covermode=atomic -coverprofile=coverage.out ./...
+    go tool cover -func=coverage.out
     go tool cover -html=coverage.out -o coverage.html
     @echo "Coverage report generated at coverage.html"
 
@@ -111,14 +118,31 @@ lint:
     @echo "Running static analysis..."
     go vet ./...
 
-# Pre-commit and local quality gate (matches CI vet + race tests)
-check-go: lint test-race
+# Local vet, race tests, and coverage reports; CI enforces the coverage minimum
+check-go: lint test-cover
 
-# Versioned public binary, WASM core, and hashed catalog for v* tags
-release: build-cli build-internal build-wasm build-bundle
-	cp {{BIN_DIR}}/prosetta {{BIN_DIR}}/prosetta-"$({{BIN_DIR}}/prosetta version)"
+# Versioned CLI binaries for Linux, macOS, and Windows on amd64 and arm64
+release-cli:
+    #!/usr/bin/env sh
+    set -eu
+    version="$(go run ./cmd/prosetta version)"
+    mkdir -p "{{BIN_DIR}}"
+    for target in {{RELEASE_TARGETS}}; do
+        target_os="${target%/*}"
+        target_arch="${target#*/}"
+        extension=""
+        if [ "$target_os" = windows ]; then
+            extension=".exe"
+        fi
+        output="{{BIN_DIR}}/prosetta-${version}-${target_os}-${target_arch}${extension}"
+        echo "Building $output..."
+        CGO_ENABLED=0 GOOS="$target_os" GOARCH="$target_arch" go build -trimpath -o "$output" ./cmd/prosetta
+    done
 
-# Content-only artifacts for catalog-v* tags
+# All platform CLI binaries, WASM core, and runtime bridge for v* tags
+release: release-cli build-wasm
+
+# Build catalog assets for branch-based GitHub Pages publishing
 release-catalog: build-bundle
 
 # Tidy and verify go.mod / go.sum dependencies
