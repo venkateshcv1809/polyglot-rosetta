@@ -11,6 +11,7 @@ import (
 	catalogcontent "polyglot-rosetta/internal/catalog/content"
 	"polyglot-rosetta/internal/domain/evaluation"
 	"polyglot-rosetta/internal/domain/language"
+	"polyglot-rosetta/internal/domain/testcase"
 	engine "polyglot-rosetta/internal/execution"
 )
 
@@ -40,4 +41,13 @@ func Evaluate(ctx context.Context, request runapi.Request, concept Concept) (eng
 	return engine.EvaluateSuite(ctx, evaluation.Request{
 		Language: lang, SourceCode: request.Source, Mode: request.Mode,
 	}, suite)
+}
+
+// LoadTestCases supplies native concept content to the shared command flow.
+func LoadTestCases(concept Concept) ([]testcase.TestCase, error) {
+	suite, err := catalogcontent.LoadTestSuite(os.DirFS(concept.root), concept.Reference)
+	if err != nil {
+		return nil, err
+	}
+	return suite.TestCases, nil
 }
