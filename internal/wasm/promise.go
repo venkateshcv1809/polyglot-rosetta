@@ -5,6 +5,7 @@ package wasm
 import (
 	"fmt"
 	"syscall/js"
+	"time"
 )
 
 // Promise runs work in a goroutine so JavaScript can service asynchronous work.
@@ -27,12 +28,42 @@ func Promise(work func() any) js.Value {
 
 // Invoke calls a JavaScript backend and awaits either its value or its Promise.
 func Invoke(callback js.Value, args ...any) (value js.Value, err error) {
+	return invoke(callback, 0, args...)
+}
+
+// InvokeWithTimeout bounds asynchronous host work. Promise.race keeps late
+// settlements inside JavaScript, so they cannot invoke released Go callbacks.
+// It cannot interrupt a synchronous JavaScript callback or terminate a worker;
+// hosts must enforce their own execution deadlines and honor disposal.
+func InvokeWithTimeout(callback js.Value, timeout time.Duration, args ...any) (js.Value, error) {
+	return invoke(callback, timeout, args...)
+}
+
+func invoke(callback js.Value, timeout time.Duration, args ...any) (value js.Value, err error) {
 	defer func() {
 		if recovered := recover(); recovered != nil {
 			err = fmt.Errorf("browser execution failed: %v", recovered)
 		}
 	}()
 	pending := callback.Invoke(args...)
+	if timeout > 0 {
+		var timer js.Value
+		var onTimeout js.Func
+		executor := js.FuncOf(func(_ js.Value, args []js.Value) any {
+			reject := args[1]
+			onTimeout = js.FuncOf(func(js.Value, []js.Value) any {
+				reject.Invoke(js.Global().Get("Error").New(fmt.Sprintf("host callback exceeded deadline of %v", timeout)))
+				return nil
+			})
+			timer = js.Global().Call("setTimeout", onTimeout, max(1, timeout.Milliseconds()))
+			return nil
+		})
+		deadline := js.Global().Get("Promise").New(executor)
+		executor.Release()
+		defer onTimeout.Release()
+		defer js.Global().Call("clearTimeout", timer)
+		pending = js.Global().Get("Promise").Call("race", js.ValueOf([]any{pending, deadline}))
+	}
 	type outcome struct {
 		value js.Value
 		err   error

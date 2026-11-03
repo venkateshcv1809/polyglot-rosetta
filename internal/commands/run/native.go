@@ -7,7 +7,6 @@ import (
 
 	runapi "polyglot-rosetta/internal/api/run"
 	"polyglot-rosetta/internal/catalog"
-	"polyglot-rosetta/internal/domain/evaluation"
 	"polyglot-rosetta/internal/domain/language"
 	"polyglot-rosetta/internal/domain/testcase"
 	engine "polyglot-rosetta/internal/execution"
@@ -37,15 +36,5 @@ func (h nativeHost) EnsureAvailable(_ context.Context, name string) error {
 }
 
 func (h nativeHost) Execute(ctx context.Context, request runapi.Request, tests []testcase.TestCase) (runapi.Result, error) {
-	lang, err := language.Parse(request.Language)
-	if err != nil {
-		return runapi.Result{}, err
-	}
-	evaluated, err := engine.EvaluateSuite(ctx, evaluation.Request{Language: lang, SourceCode: request.Source, Mode: request.Mode}, &testcase.TestSuite{Concept: h.concept.Reference, TestCases: tests})
-	result := runapi.NewResult()
-	result.ID, result.Language, result.Mode = request.ID, request.Language, request.Mode
-	if err != nil {
-		return result, err
-	}
-	return resultFromEvaluation(result, evaluated), nil
+	return executeEvaluation(ctx, request, tests, engine.NewNativeHost())
 }

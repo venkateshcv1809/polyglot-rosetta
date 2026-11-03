@@ -35,12 +35,18 @@ type MethodHelp struct {
 }
 
 type helpResult struct {
-	SchemaVersion int          `json:"schema_version"`
-	Status        string       `json:"status"`
-	Methods       []MethodHelp `json:"methods"`
-	HostOptions   []Option     `json:"host_options"`
-	Error         string       `json:"error,omitempty"`
+	HostAPIVersion int                 `json:"host_api_version"`
+	SchemaVersion  int                 `json:"schema_version"`
+	Status         string              `json:"status"`
+	Methods        []MethodHelp        `json:"methods"`
+	HostOptions    []Option            `json:"host_options"`
+	HostContracts  map[string][]Option `json:"host_contracts"`
+	Error          string              `json:"error,omitempty"`
 }
+
+// HostAPIVersion changes when the JavaScript callback contract changes.
+// Public command result schema_version remains independent of host callbacks.
+const HostAPIVersion = 1
 
 // Required is set only for mandatory callbacks; omitted means optional.
 // Validation and help both read this configuration.
@@ -51,9 +57,15 @@ var hostOptions = []Option{
 	{Name: "ensureAvailable", Type: "function", Required: true,
 		Description: "Make a language ready and return its readiness snapshot; used by run.",
 		Signature:   "(language: string) => CacheSnapshot | Promise<CacheSnapshot>"},
-	{Name: "execute", Type: "function", Required: true,
-		Description: "Compile and evaluate the normalized request against the selected test cases; used by run.",
-		Signature:   "(request: RunRequest, testCases: TestCase[]) => RunResult | Promise<RunResult>"},
+	{Name: "buildProgram", Type: "function", Required: true,
+		Description: "Prepare the generated files and compile once when build_required is true. Return compiler timing and errors; do not grade answers.",
+		Signature:   "(program: Program) => BuildResult | Promise<BuildResult>"},
+	{Name: "runCase", Type: "function", Required: true,
+		Description: "Launch the prepared entry in a fresh environment with args and return raw output, exit status and timeout state. Preserve the built session for the next case.",
+		Signature:   "(request: CaseRequest) => CaseResult | Promise<CaseResult>"},
+	{Name: "disposeProgram", Type: "function", Required: true,
+		Description: "Release a session, including partial or failed builds. Cancel outstanding work and prevent late completion from recreating disposed resources.",
+		Signature:   "(sessionID: string) => void | Promise<void>"},
 	{Name: "clearCache", Type: "function",
 		Description: "Delete only the readiness snapshot; required when probe is called with clear: true. Preserve compiler assets.",
 		Signature:   "() => void | Promise<void>"},
@@ -63,15 +75,15 @@ var bindHelp = MethodHelp{
 	Description: "Validate and register browser callbacks. Failed binding preserves the previous host.",
 	Signatures:  []string{"bind(host)"},
 	Parameters:  []Option{{Name: "host", Type: "object", Required: true, Description: "Callback object; see host_options for required fields, signatures, and optional fields."}},
-	Returns:     "{schema_version, status, ok, error?, missing_required?, invalid_options?, options?, help?}",
-	Notes:       []string{"Required callbacks must all be supplied, even when using only probe. Optional callbacks must be functions if supplied.", "Unknown fields are ignored. Callbacks may return immediate values or promises."},
+	Returns:     "{schema_version, host_api_version, status, ok, error?, missing_required?, invalid_options?, options?, help?}",
+	Notes:       []string{"Go owns evaluation; buildProgram, runCase and disposeProgram supply environment-specific operations.", "Required callbacks must all be supplied, even when using only probe. Optional callbacks must be functions if supplied.", "Unknown fields are ignored. Callbacks may return immediate values or promises."},
 }
 
 var helpMethod = MethodHelp{
 	Description: "Describe available methods and required or optional host callbacks.",
 	Signatures:  []string{"help()", "help(method)"},
 	Parameters:  []Option{{Name: "method", Type: "string", Description: "An optional method name; omit it to list every registered method."}},
-	Returns:     "{schema_version, status, methods, host_options, error?}",
+	Returns:     "{schema_version, host_api_version, status, methods, host_options, host_contracts, error?}",
 }
 
 // Help builds discovery from the same bindings that main registers. No host
@@ -87,7 +99,7 @@ func Help(bindings []Binding) Binding {
 	self.Name = "help"
 	methods = append(methods, normalizeHelp(self))
 	return Binding{Name: "help", Help: self, Handler: func(_ js.Value, args []js.Value) any {
-		result := helpResult{SchemaVersion: api.SchemaVersion, Status: "ok", Methods: methods, HostOptions: hostOptions}
+		result := helpResult{HostAPIVersion: HostAPIVersion, SchemaVersion: api.SchemaVersion, Status: "ok", Methods: methods, HostOptions: hostOptions, HostContracts: hostContracts}
 		if len(args) > 1 || len(args) == 1 && args[0].Type() != js.TypeString {
 			result.Status, result.Error = "error", "help accepts no arguments or one method name; call ProsettaCore.help() to list methods"
 			return Value(result)

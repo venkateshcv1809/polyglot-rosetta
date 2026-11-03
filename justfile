@@ -90,23 +90,23 @@ submit *args:
 # Development & Testing
 # ------------------------------------------------------------------------------
 
-# Run all Go unit tests
+# Run Go unit and native integration tests, including generated WASI programs
 test:
-    @echo "Running unit tests..."
+    @echo "Running Go unit and native integration tests..."
     go test -v ./...
 
-# Run Go WASM unit and integration tests through Go's Node runtime wrapper
+# Check WASM bindings and staged host contracts through Go's Node runtime wrapper
 test-wasm:
 	GOOS=js GOARCH=wasm go test -v -timeout=90s -exec="env -i PATH=$(dirname "$(command -v node)"):/usr/bin:/bin $(go env GOROOT)/lib/wasm/go_js_wasm_exec" ./cmd/wasm ./internal/wasm
 
 # Run Go tests with the race detector
 test-race:
-    @echo "Running unit tests with the race detector..."
+    @echo "Running Go tests with the race detector..."
     go test -race ./...
 
 # Run race tests with CI coverage settings and generate local reports
 test-cover:
-    @echo "Running unit tests with the race detector and coverage..."
+    @echo "Running Go tests with the race detector and coverage..."
     go test -race -covermode=atomic -coverprofile=coverage.out ./...
     go tool cover -func=coverage.out
     go tool cover -html=coverage.out -o coverage.html
@@ -119,6 +119,9 @@ lint:
 
 # Local vet, race tests, and coverage reports; CI enforces the coverage minimum
 check-go: lint test-cover
+
+# Build native/WASM tools and catalog, then run native and WASM checks
+check: build-local build-bundle check-go test-wasm
 
 # Versioned CLI binaries for Linux, macOS, and Windows on amd64 and arm64
 release-cli:

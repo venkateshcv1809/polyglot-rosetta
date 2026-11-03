@@ -29,9 +29,6 @@ func (h *fakeHost) Resolve(_ context.Context, id string) (catalog.Concept, error
 func (h *fakeHost) EnsureAvailable(context.Context, string) error { return h.ensureErr }
 func (h *fakeHost) Execute(_ context.Context, request runapi.Request, tests []testcase.TestCase) (runapi.Result, error) {
 	h.executed++
-	if h.executeErr != nil {
-		return runapi.Result{}, h.executeErr
-	}
 	r := runapi.NewResult()
 	r.ID, r.Language, r.Mode = request.ID, request.Language, request.Mode
 	r.Status, r.TotalPassed = evaluation.StatusPassed, len(tests)
@@ -41,7 +38,41 @@ func (h *fakeHost) Execute(_ context.Context, request runapi.Request, tests []te
 	if h.mutate != nil {
 		h.mutate(&r)
 	}
-	return r, nil
+	return r, h.executeErr
+}
+
+func TestRunRetainsOnlyValidFailureTimings(t *testing.T) {
+	for _, scenario := range []string{"valid", "schema", "identity", "negative build", "negative elapsed"} {
+		t.Run(scenario, func(t *testing.T) {
+			host, request := sharedRunFixture()
+			host.executeErr = errors.New("build failed")
+			host.mutate = func(r *runapi.Result) {
+				build := int64(25)
+				r.BuildDurationMs, r.DurationMs = &build, 30
+				switch scenario {
+				case "schema":
+					r.SchemaVersion++
+				case "identity":
+					r.ID = "other"
+				case "negative build":
+					build = -1
+				case "negative elapsed":
+					r.DurationMs = -1
+				}
+			}
+			result, err := Run(context.Background(), request, host)
+			if !errors.Is(err, host.executeErr) || result.Status != evaluation.StatusError || len(result.TestResults) != 0 {
+				t.Fatalf("failure result = %+v, %v", result, err)
+			}
+			if scenario == "valid" {
+				if result.BuildDurationMs == nil || *result.BuildDurationMs != 25 || result.DurationMs != 30 {
+					t.Fatalf("lost timings: %+v", result)
+				}
+			} else if result.BuildDurationMs != nil || result.DurationMs != 0 {
+				t.Fatalf("accepted invalid timings: %+v", result)
+			}
+		})
+	}
 }
 func sharedRunFixture() (*fakeHost, runapi.Request) {
 	id, _ := catalog.ConceptID("fundamentals/hello-world")

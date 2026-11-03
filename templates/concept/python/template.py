@@ -1,5 +1,7 @@
-class Solution:
+from typing import Any
 
-    def solve(self, input_data: any) -> any:
-        # TODO: Implement solution
-        pass
+
+class Solution:
+    def solve(self, input_data: Any) -> Any:
+        # Read input_data["value"] and return a JSON-compatible value.
+        return None

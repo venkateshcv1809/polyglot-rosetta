@@ -38,6 +38,7 @@ out/
 *.dylib
 *.test
 *.out
+/coverage.html
 
 # Rust
 /target/

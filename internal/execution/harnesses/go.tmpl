@@ -1,0 +1,26 @@
+package main
+
+import (
+    "encoding/hex"
+    "encoding/json"
+    "fmt"
+    "os"
+    "time"
+)
+
+func main() {
+    if len(os.Args) != 2 { return }
+    var inputJSON string
+    switch os.Args[1] {
+    {{range .Cases}}case "{{.Index}}": inputJSON = {{.Input}}
+    {{end}}default: return
+    }
+    var input any
+    if err := json.Unmarshal([]byte(inputJSON), &input); err != nil { panic(err) }
+    started := time.Now()
+    actual := Solution{}.Solve(input)
+    elapsed := time.Since(started).Nanoseconds()
+    output, err := json.Marshal(actual)
+    if err != nil { panic(err) }
+    fmt.Printf("\n%s:%s:%d:json:%s\n", {{.Marker}}, os.Args[1], elapsed, hex.EncodeToString(output))
+}

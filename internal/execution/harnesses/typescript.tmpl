@@ -1,0 +1,30 @@
+import { Solution } from "./solution";
+declare const process: { argv: string[]; hrtime: { bigint(): bigint } };
+
+// Reject values JSON would silently coerce or omit. This also catches holes in
+// arrays, which otherwise serialize like null elements rather than real values.
+function validateJSON(value: unknown): void {
+  if (value === null || typeof value === "string" || typeof value === "boolean") return;
+  if (typeof value === "number" && Number.isFinite(value)) return;
+  if (Array.isArray(value)) {
+    for (let i = 0; i < value.length; i++) validateJSON(value[i]);
+    return;
+  }
+  if (typeof value === "object" && (Object.getPrototypeOf(value) === Object.prototype || Object.getPrototypeOf(value) === null)) {
+    for (const item of Object.values(value)) validateJSON(item);
+    return;
+  }
+  throw new Error("Solution must return a JSON-compatible value");
+}
+
+const inputs = JSON.parse({{.Inputs}});
+const index = Number(process.argv[2]);
+const inputData = inputs[index];
+const solution = new Solution();
+const started = process.hrtime.bigint();
+const actual = solution.solve(inputData);
+const elapsed = process.hrtime.bigint() - started;
+validateJSON(actual);
+const output = new TextEncoder().encode(JSON.stringify(actual));
+const hex = Array.from(output, byte => byte.toString(16).padStart(2, "0")).join("");
+console.log("\n" + {{.Marker}} + ":" + index + ":" + elapsed + ":json:" + hex);

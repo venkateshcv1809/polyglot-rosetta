@@ -65,6 +65,24 @@ func TestWriteEvaluationOmitsSummaryOnError(t *testing.T) {
 	}
 }
 
+func TestWriteEvaluationShowsBuildTimingOnError(t *testing.T) {
+	var output bytes.Buffer
+	build := int64(25)
+	if err := writeResult(&output, "text", runapi.Result{
+		Status: evaluation.StatusError, Error: "build failed", BuildDurationMs: &build, DurationMs: 30,
+	}); err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{"Build Time:   25ms", "Elapsed Time: 30ms"} {
+		if !strings.Contains(output.String(), want) {
+			t.Fatalf("missing %q in %q", want, output.String())
+		}
+	}
+	if strings.Contains(output.String(), "Summary:") || strings.Contains(output.String(), "Results:") {
+		t.Fatalf("unexpected case results after failed build: %q", output.String())
+	}
+}
+
 func TestWriteEvaluationPassedText(t *testing.T) {
 	var output bytes.Buffer
 	result := runapi.Result{

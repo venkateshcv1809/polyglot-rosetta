@@ -14,6 +14,8 @@ const (
 )
 
 // Result is the structured outcome of one run request.
+// BuildDurationMs records compiler wall time for the solution and harness,
+// including failed build attempts. It is omitted when no build was attempted.
 type Result struct {
 	SchemaVersion   int               `json:"schema_version"`
 	ID              string            `json:"id"`

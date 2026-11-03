@@ -1,0 +1,11 @@
+{
+  "id": "fundamentals",
+  "title": "Fundamentals",
+  "description": "Master core language primitives, type systems, control flow, and execution mechanics. This category builds foundational fluency across language syntax, variable scope, function declarations, and runtime evaluation rules before tackling complex data structures and algorithms.",
+  "items": [
+    {
+      "id": "hello-world",
+      "order": 1
+    }
+  ]
+}

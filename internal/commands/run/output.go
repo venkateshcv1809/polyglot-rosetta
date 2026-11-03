@@ -52,9 +52,6 @@ func writeResult(output io.Writer, format string, result runapi.Result) error {
 }
 
 func writeEvaluationEnd(output io.Writer, result runapi.Result) error {
-	if result.Error != "" {
-		return nil
-	}
 	view := resultDisplay{
 		Concept: result.Concept, Language: result.Language, Cases: result.Mode, Passed: result.TotalPassed,
 		Total:    result.TotalPassed + result.TotalFailed,
@@ -64,6 +61,12 @@ func writeEvaluationEnd(output io.Writer, result runapi.Result) error {
 	if result.BuildDurationMs != nil {
 		buildDuration := time.Duration(*result.BuildDurationMs) * time.Millisecond
 		view.BuildDuration = &buildDuration
+	}
+	if result.Error != "" {
+		if view.BuildDuration == nil {
+			return nil
+		}
+		return renderText(output, "build-error.tmpl", view)
 	}
 	view.Status = "\033[32m[ PASSED ]\033[0m"
 	if result.Status != evaluation.StatusPassed {

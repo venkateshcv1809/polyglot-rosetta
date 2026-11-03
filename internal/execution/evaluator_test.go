@@ -303,6 +303,13 @@ pub const Solution = struct { pub fn solve(allocator: std.mem.Allocator, _: std.
 			if len(evaluation.Report.Outcomes) != 1 || evaluation.Report.Outcomes[0].SolutionTimeNs <= 0 {
 				t.Fatalf("solution time missing: %+v", evaluation.Report.Outcomes)
 			}
+			if test.language == language.Python {
+				if evaluation.BuildDuration != nil {
+					t.Fatal("Python reported a compilation step")
+				}
+			} else if evaluation.BuildDuration == nil || *evaluation.BuildDuration <= 0 || *evaluation.BuildDuration > evaluation.Duration {
+				t.Fatalf("invalid build timing: %+v", evaluation)
+			}
 		})
 	}
 }
@@ -324,14 +331,30 @@ func TestEvaluateReturnsFailedReportForWrongAnswer(t *testing.T) {
 }
 
 func TestEvaluateReportsCompileFailure(t *testing.T) {
-	if _, err := exec.LookPath("go"); err != nil {
-		t.Skip("go toolchain is unavailable")
-	}
-	_, err := EvaluateSuite(context.Background(), domainevaluation.Request{
-		Language: language.Go, SourceCode: "not go source",
-	}, evaluationSuite())
-	if err == nil || !strings.Contains(err.Error(), `build command "go" failed`) {
-		t.Fatalf("error = %v", err)
+	for _, test := range []struct {
+		lang     language.Language
+		compiler string
+	}{
+		{language.Go, "go"}, {language.Rust, "rustc"},
+		{language.TypeScript, "tsc"}, {language.Zig, "zig"},
+	} {
+		t.Run(string(test.lang), func(t *testing.T) {
+			if _, err := exec.LookPath(test.compiler); err != nil {
+				t.Skip("compiler is unavailable")
+			}
+			evaluated, err := EvaluateSuite(context.Background(), domainevaluation.Request{
+				Language: test.lang, SourceCode: "not valid source",
+			}, evaluationSuite())
+			if err == nil || !strings.Contains(err.Error(), "build command") {
+				t.Fatalf("error = %v", err)
+			}
+			if evaluated.BuildDuration == nil || *evaluated.BuildDuration <= 0 || evaluated.Duration < *evaluated.BuildDuration {
+				t.Fatalf("build timing lost on error: %+v", evaluated)
+			}
+			if evaluated.Report.TotalTests != 0 || len(evaluated.Report.Outcomes) != 0 {
+				t.Fatalf("cases executed after build failure: %+v", evaluated.Report)
+			}
+		})
 	}
 }
 

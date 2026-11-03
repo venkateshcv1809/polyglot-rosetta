@@ -1,0 +1,28 @@
+mod solution;
+use solution::Solution;
+use std::collections::BTreeMap;
+use std::time::Instant;
+
+#[derive(Debug, PartialEq)]
+pub enum JsonValue {
+    Null,
+    Bool(bool),
+    Number(f64),
+    String(String),
+    Array(Vec<JsonValue>),
+    Object(BTreeMap<String, JsonValue>),
+}
+
+fn main() {
+    let index = std::env::args().nth(1).and_then(|arg| arg.parse::<usize>().ok()).expect("testcase index");
+    let (input, text_output) = match index {
+    {{range .Cases}}{{.Index}} => ({{.Input}}, {{.TextOutput}}),
+    {{end}}_ => panic!("invalid testcase index"),
+    };
+    let started = Instant::now();
+    let actual = Solution::solve(&input);
+    let elapsed = started.elapsed().as_nanos();
+    let format = if text_output { "text" } else { "json" };
+    let hex: String = actual.as_bytes().iter().map(|byte| format!("{:02x}", byte)).collect();
+    println!("\n{}:{}:{}:{}:{}", {{.Marker}}, index, elapsed, format, hex);
+}

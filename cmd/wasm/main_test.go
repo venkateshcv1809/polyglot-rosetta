@@ -3,6 +3,7 @@
 package main
 
 import (
+	"encoding/hex"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -74,7 +75,7 @@ func TestPublicWASMBindings(t *testing.T) {
 		checkFailure(t, core.Call("help", 7), "method name")
 		missing := core.Call("bind", map[string]any{})
 		checkFailure(t, missing, "refreshCache")
-		if missing.Get("missing_required").Length() != 3 || missing.Get("options").Length() != help.Get("host_options").Length() {
+		if missing.Get("missing_required").Length() != 5 || missing.Get("options").Length() != help.Get("host_options").Length() {
 			t.Fatal("bind discovery is incomplete")
 		}
 		checkFailure(t, core.Call("version", "extra"), "accepts no arguments")
@@ -162,149 +163,264 @@ func TestPublicWASMBindings(t *testing.T) {
 		}
 	})
 
-	t.Run("execution readiness and case selection", func(t *testing.T) {
+	t.Run("staged execution and core grading", func(t *testing.T) {
 		f.activate(t)
-		calls := 0
+		builds, runs, disposals := 0, 0, 0
+		var program js.Value
 		f.bind(t, map[string]any{
-			"ensureAvailable": f.callback(t, func([]js.Value) any {
-				return wasm.Value(map[string]any{"schema_version": 1, "languages": map[string]any{}})
+			"buildProgram": f.callback(t, func(args []js.Value) any {
+				builds++
+				program = args[0]
+				if program.Get("language").String() != "typescript" || program.Get("entry").String() != "main.ts" || program.Get("files").Get("solution.ts").String() != "export class Solution {}" {
+					t.Error("normalized source program missing")
+				}
+				if strings.Contains(jsonString(program), `"expected"`) {
+					t.Error("expected answers were sent to host")
+				}
+				return buildResult(args, "")
 			}),
-			"execute": f.callback(t, func([]js.Value) any { calls++; return js.Null() }),
+			"runCase": f.callback(t, func(args []js.Value) any {
+				runs++
+				r := args[0]
+				if r.Get("args").Index(0).String() != fmt.Sprint(r.Get("index").Int()) || r.Get("timeout_ms").Int() != 10000 {
+					t.Error("invalid case launch")
+				}
+				return caseResult(args, greeting(r.Get("index").Int()))
+			}),
+			"disposeProgram": f.callback(t, func(args []js.Value) any {
+				disposals++
+				if args[0].String() != program.Get("session_id").String() {
+					t.Error("wrong session disposed")
+				}
+				return nil
+			}),
 		})
-		checkFailure(t, await(t, core.Call("run", request())), "not ready")
-		if calls != 0 {
-			t.Fatal("execute called before readiness")
-		}
-		var normalized, selected js.Value
-		f.bind(t, map[string]any{"execute": f.callback(t, func(args []js.Value) any {
-			normalized, selected = args[0], args[1]
-			return backendResult(args, "passed")
-		})})
 		result := await(t, core.Call("run", request()))
 		checkStatus(t, result, "passed")
-		checkString(t, normalized.Get("id"), f.id)
-		checkString(t, normalized.Get("language"), "typescript")
-		checkString(t, normalized.Get("mode"), "public")
+		checkString(t, result.Get("id"), f.id)
 		checkString(t, result.Get("concept"), "fundamentals/hello-world")
-		if selected.Length() != 1 || selected.Index(0).Get("hidden").Bool() || result.Get("total_passed").Int() != 1 {
-			t.Fatal("wrong public cases")
+		if builds != 1 || runs != 1 || disposals != 1 || result.Get("build_duration_ms").Int() != 7 {
+			t.Fatal("wrong lifecycle or timing")
 		}
 		all := request()
 		all["mode"] = "all"
 		result = await(t, core.Call("run", all))
 		checkStatus(t, result, "passed")
-		if selected.Length() != 2 || result.Get("test_results").Index(0).Get("hidden").Bool() || !result.Get("test_results").Index(1).Get("hidden").Bool() {
-			t.Fatal("hidden cases not preserved")
-		}
-		for _, status := range []string{"failed", "timeout", "error"} {
-			f.bind(t, map[string]any{"execute": f.callback(t, func(args []js.Value) any { return backendResult(args, status) })})
-			result := await(t, core.Call("run", request()))
-			checkStatus(t, result, status)
-			if result.Get("total_failed").Int() != 1 {
-				t.Fatal("wrong failed count")
-			}
+		if builds != 2 || runs != 3 || disposals != 2 || result.Get("total_passed").Int() != 2 || !result.Get("test_results").Index(1).Get("hidden").Bool() {
+			t.Fatal("wrong public/hidden selection")
 		}
 	})
 
-	t.Run("invalid requests and backend failures", func(t *testing.T) {
+	t.Run("readiness and invalid requests stop before build", func(t *testing.T) {
 		f.activate(t)
-		calls := 0
-		f.bind(t, map[string]any{"execute": f.callback(t, func([]js.Value) any { calls++; return js.Null() })})
-		invalid := []any{js.Null(), []any{}}
-		for key, value := range map[string]any{"source": "", "mode": "other", "language": "ruby", "id": "c-" + strings.Repeat("0", 32)} {
-			r := request()
-			r[key] = value
-			invalid = append(invalid, r)
-		}
-		for _, r := range invalid {
+		builds := 0
+		f.bind(t, map[string]any{
+			"ensureAvailable": f.callback(t, func([]js.Value) any {
+				return wasm.Value(map[string]any{"schema_version": 1, "languages": map[string]any{}})
+			}),
+			"buildProgram": f.callback(t, func([]js.Value) any { builds++; return js.Null() }),
+		})
+		checkFailure(t, await(t, core.Call("run", request())), "not ready")
+		f.bind(t, map[string]any{"buildProgram": f.callback(t, func([]js.Value) any { builds++; return js.Null() })})
+		for _, r := range []any{js.Null(), []any{}, map[string]any{"id": f.id, "language": "go", "source": ""}, map[string]any{"id": f.id, "language": "ruby", "source": "x"}} {
 			checkFailure(t, await(t, core.Call("run", r)), "")
 		}
-		if calls != 0 {
-			t.Fatal("backend called with invalid request")
+		if builds != 0 {
+			t.Fatal("built invalid or unready request")
 		}
-		// JSON.parse throws synchronously when called with the request object.
-		f.bind(t, map[string]any{"execute": js.Global().Get("JSON").Get("parse")})
-		checkFailure(t, await(t, core.Call("run", request())), "browser execution failed")
-		f.bind(t, map[string]any{"execute": f.callback(t, func([]js.Value) any { return rejected("async backend failure") })})
-		checkFailure(t, await(t, core.Call("run", request())), "async backend failure")
-		f.bind(t, map[string]any{"execute": f.callback(t, func([]js.Value) any { return js.Undefined() })})
-		checkFailure(t, await(t, core.Call("run", request())), "JSON object")
-		cyclic := js.Global().Get("Object").New()
-		cyclic.Set("languages", cyclic)
-		f.bind(t, map[string]any{"execute": f.callback(t, func([]js.Value) any { return cyclic })})
-		checkFailure(t, await(t, core.Call("run", request())), "decode JavaScript value")
-		changes := []struct {
-			name   string
-			change func(js.Value)
-		}{
-			{"schema", func(r js.Value) { r.Set("schema_version", 2) }},
-			{"identity", func(r js.Value) { r.Set("id", "different") }},
-			{"counts", func(r js.Value) { r.Set("total_passed", 0) }},
-			{"duration", func(r js.Value) { r.Set("duration_ms", -1) }},
-			{"missing cases", func(r js.Value) { r.Set("test_results", []any{}) }},
-			{"case passed", func(r js.Value) { r.Get("test_results").Index(0).Set("passed", false) }},
-			{"case status", func(r js.Value) { r.Get("test_results").Index(0).Set("status", "unknown") }},
-			{"status", func(r js.Value) { r.Set("status", "unknown") }},
-			{"timeout consistency", func(r js.Value) { r.Set("status", "timeout") }},
-		}
-		for _, change := range changes {
-			t.Run(change.name, func(t *testing.T) {
-				f.bind(t, map[string]any{"execute": f.callback(t, func(args []js.Value) any { r := backendResult(args, "passed"); change.change(r); return r })})
-				checkFailure(t, await(t, core.Call("run", request())), "invalid execution result")
+	})
+
+	t.Run("case failures do not stop later cases", func(t *testing.T) {
+		all := request()
+		all["mode"] = "all"
+		for _, kind := range []string{"wrong_answer", "crashed", "timeout", "missing record"} {
+			t.Run(kind, func(t *testing.T) {
+				runs, disposals := 0, 0
+				f.bind(t, map[string]any{
+					"runCase": f.callback(t, func(args []js.Value) any {
+						runs++
+						index := args[0].Get("index").Int()
+						r := caseResult(args, greeting(index))
+						if index == 0 {
+							switch kind {
+							case "wrong_answer":
+								r = caseResult(args, `"wrong"`)
+							case "crashed":
+								r.Set("exit_code", 2)
+							case "timeout":
+								r.Set("timed_out", true)
+								r.Set("exit_code", -1)
+							case "missing record":
+								r.Set("stdout", "debug only")
+							}
+						}
+						return r
+					}),
+					"disposeProgram": f.callback(t, func([]js.Value) any { disposals++; return nil }),
+				})
+				result := await(t, core.Call("run", all))
+				checkStatus(t, result, "failed")
+				expected := kind
+				if kind == "missing record" {
+					expected = "crashed"
+				}
+				checkString(t, result.Get("test_results").Index(0).Get("status"), expected)
+				checkString(t, result.Get("test_results").Index(1).Get("status"), "passed")
+				if runs != 2 || disposals != 1 || result.Get("total_passed").Int() != 1 {
+					t.Fatal("lost subsequent case or disposal")
+				}
 			})
 		}
 	})
 
+	t.Run("failed and invalid builds always dispose", func(t *testing.T) {
+		mutations := []struct {
+			name, want string
+			change     func(js.Value)
+		}{
+			{"compiler failure", "compile failed", func(r js.Value) { r.Set("error", "compile failed") }},
+			{"schema", "invalid build result", func(r js.Value) { r.Set("schema_version", 2) }},
+			{"null schema", "schema_version", func(r js.Value) { r.Set("schema_version", js.Null()) }},
+			{"nonfinite duration", "build_duration_ms", func(r js.Value) { r.Set("build_duration_ms", js.Global().Get("NaN")) }},
+			{"session", "invalid build result", func(r js.Value) { r.Set("session_id", "wrong") }},
+			{"negative duration", "invalid build result", func(r js.Value) { r.Set("build_duration_ms", -1) }},
+			{"missing duration", "build_duration_ms", func(r js.Value) { js.Global().Get("Reflect").Call("deleteProperty", r, "build_duration_ms") }},
+		}
+		for _, mutation := range mutations {
+			t.Run(mutation.name, func(t *testing.T) {
+				runs, disposals := 0, 0
+				f.bind(t, map[string]any{
+					"buildProgram":   f.callback(t, func(args []js.Value) any { r := buildResult(args, ""); mutation.change(r); return r }),
+					"runCase":        f.callback(t, func([]js.Value) any { runs++; return nil }),
+					"disposeProgram": f.callback(t, func([]js.Value) any { disposals++; return nil }),
+				})
+				result := await(t, core.Call("run", request()))
+				checkFailure(t, result, mutation.want)
+				if runs != 0 || disposals != 1 || result.Get("test_results").Length() != 0 {
+					t.Fatal("invalid build lifecycle")
+				}
+				if mutation.name == "compiler failure" && result.Get("build_duration_ms").Int() != 7 {
+					t.Fatal("failed build timing lost")
+				}
+			})
+		}
+	})
+
+	t.Run("bridge errors and invalid case results abort and dispose", func(t *testing.T) {
+		cases := []struct {
+			name, want string
+			callback   any
+		}{
+			{"synchronous throw", "browser execution failed", js.Global().Get("JSON").Get("parse")},
+			{"rejection", "backend rejected", f.callback(t, func([]js.Value) any { return rejected("backend rejected") })},
+			{"undefined", "JSON object", f.callback(t, func([]js.Value) any { return js.Undefined() })},
+			{"wrong session", "invalid case result", f.callback(t, func(args []js.Value) any { r := caseResult(args, greeting(0)); r.Set("session_id", "wrong"); return r })},
+			{"wrong index", "invalid case result", f.callback(t, func(args []js.Value) any { r := caseResult(args, greeting(0)); r.Set("index", 9); return r })},
+			{"wrong schema", "invalid case result", f.callback(t, func(args []js.Value) any { r := caseResult(args, greeting(0)); r.Set("schema_version", 2); return r })},
+			{"invalid exit", "exit_code", f.callback(t, func(args []js.Value) any { r := caseResult(args, greeting(0)); r.Set("exit_code", -2); return r })},
+			{"null exit", "exit_code", f.callback(t, func(args []js.Value) any { r := caseResult(args, greeting(0)); r.Set("exit_code", js.Null()); return r })},
+		}
+		for _, c := range cases {
+			t.Run(c.name, func(t *testing.T) {
+				disposals := 0
+				f.bind(t, map[string]any{"runCase": c.callback, "disposeProgram": f.callback(t, func([]js.Value) any { disposals++; return nil })})
+				checkFailure(t, await(t, core.Call("run", request())), c.want)
+				if disposals != 1 {
+					t.Fatal("session leaked")
+				}
+			})
+		}
+		disposals := 0
+		f.bind(t, map[string]any{"buildProgram": f.callback(t, func([]js.Value) any { return rejected("build rejected") }), "disposeProgram": f.callback(t, func([]js.Value) any { disposals++; return rejected("cleanup failed") })})
+		result := await(t, core.Call("run", request()))
+		checkFailure(t, result, "build rejected")
+		if !strings.Contains(result.Get("error").String(), "cleanup failed") || disposals != 1 {
+			t.Fatal("cleanup error was lost")
+		}
+	})
+
 	t.Run("concurrent runs and pinned host callbacks", func(t *testing.T) {
-		f.activate(t)
-		f.bind(t, map[string]any{"execute": f.callback(t, func(args []js.Value) any {
-			return hostPromise(func() js.Value { time.Sleep(time.Millisecond); return backendResult(args, "passed") })
+		sessions := map[string]bool{}
+		f.bind(t, map[string]any{"buildProgram": f.callback(t, func(args []js.Value) any {
+			id := args[0].Get("session_id").String()
+			if sessions[id] {
+				t.Error("session reused")
+			}
+			sessions[id] = true
+			return hostPromise(func() js.Value { time.Sleep(time.Millisecond); return buildResult(args, "") })
 		})})
 		var pending []js.Value
 		for i := 0; i < 8; i++ {
 			pending = append(pending, core.Call("run", request()))
 		}
-		for _, promise := range pending {
-			checkStatus(t, await(t, promise), "passed")
+		for _, p := range pending {
+			checkStatus(t, await(t, p), "passed")
+		}
+		if len(sessions) != 8 {
+			t.Fatal("sessions collided")
 		}
 		var calls []string
 		started, release := make(chan struct{}), make(chan struct{})
-		f.bind(t, map[string]any{
-			"ensureAvailable": f.callback(t, func([]js.Value) any {
-				calls = append(calls, "A.ensureAvailable")
-				return hostPromise(func() js.Value { close(started); <-release; return readySnapshot() })
-			}),
-			"execute": f.callback(t, func(args []js.Value) any { calls = append(calls, "A.execute"); return backendResult(args, "passed") }),
-		})
-		runA := core.Call("run", request())
+		bind := func(label string, block bool) {
+			f.bind(t, map[string]any{
+				"ensureAvailable": f.callback(t, func([]js.Value) any {
+					calls = append(calls, label+".ready")
+					if block {
+						return hostPromise(func() js.Value { close(started); <-release; return readySnapshot() })
+					}
+					return readySnapshot()
+				}),
+				"buildProgram": f.callback(t, func(args []js.Value) any { calls = append(calls, label+".build"); return buildResult(args, "") }),
+				"runCase": f.callback(t, func(args []js.Value) any {
+					calls = append(calls, label+".case")
+					return caseResult(args, greeting(args[0].Get("index").Int()))
+				}),
+				"disposeProgram": f.callback(t, func([]js.Value) any { calls = append(calls, label+".dispose"); return nil }),
+			})
+		}
+		bind("A", true)
+		a := core.Call("run", request())
 		<-started
-		f.bind(t, map[string]any{
-			"ensureAvailable": f.callback(t, func([]js.Value) any { calls = append(calls, "B.ensureAvailable"); return readySnapshot() }),
-			"execute":         f.callback(t, func(args []js.Value) any { calls = append(calls, "B.execute"); return backendResult(args, "passed") }),
-		})
-		// Always unblock A, even if the assertion for B fails.
-		resultB := await(t, core.Call("run", request()))
+		bind("B", false)
+		b := await(t, core.Call("run", request()))
 		close(release)
-		resultA := await(t, runA)
-		checkStatus(t, resultB, "passed")
-		checkStatus(t, resultA, "passed")
-		if !reflect.DeepEqual(calls, []string{"A.ensureAvailable", "B.ensureAvailable", "B.execute", "A.execute"}) {
-			t.Fatalf("host calls = %v", calls)
+		ar := await(t, a)
+		checkStatus(t, b, "passed")
+		checkStatus(t, ar, "passed")
+		if !reflect.DeepEqual(calls, []string{"A.ready", "B.ready", "B.build", "B.case", "B.dispose", "A.build", "A.case", "A.dispose"}) {
+			t.Fatalf("host calls=%v", calls)
 		}
 	})
 
 	t.Run("catalog refresh preserves pending run", func(t *testing.T) {
 		f.activate(t)
 		release := make(chan struct{})
-		f.bind(t, map[string]any{"ensureAvailable": f.callback(t, func([]js.Value) any {
-			return hostPromise(func() js.Value { <-release; return readySnapshot() })
-		})})
+		f.bind(t, map[string]any{"ensureAvailable": f.callback(t, func([]js.Value) any { return hostPromise(func() js.Value { <-release; return readySnapshot() }) })})
 		pending := core.Call("run", request())
 		refreshed := core.Call("catalog", f.index)
 		close(release)
 		checkStatus(t, refreshed, "ok")
 		checkStatus(t, await(t, pending), "passed")
-		checkString(t, core.Call("version").Get("version"), version.Value)
+	})
+
+	t.Run("structured answers are compared in Go", func(t *testing.T) {
+		f.loadBundleWithCases(t, `[
+            {"id":1,"input":{},"expected":{"values":[true]},"hidden":false},
+            {"id":2,"input":{},"expected":{"label":"😀","matrix":[[1,2]],"none":null},"hidden":true}
+        ]`)
+		f.activate(t)
+		f.bind(t, map[string]any{"runCase": f.callback(t, func(args []js.Value) any {
+			if args[0].Get("index").Int() == 0 {
+				return caseResult(args, `{"values":[1]}`)
+			}
+			return caseResult(args, "{\n\"none\":null,\"matrix\":[[1,2]],\"label\":\"\\ud83d\\ude00\"\n}")
+		})})
+		all := request()
+		all["mode"] = "all"
+		result := await(t, core.Call("run", all))
+		checkStatus(t, result, "failed")
+		checkString(t, result.Get("test_results").Index(0).Get("status"), "wrong_answer")
+		checkString(t, result.Get("test_results").Index(1).Get("status"), "passed")
 	})
 }
 
@@ -332,7 +448,9 @@ func (f *wasmFixture) bind(t *testing.T, overrides map[string]any) {
 	host := map[string]any{
 		"refreshCache":    f.callback(t, func([]js.Value) any { return wasm.Value(map[string]any{"toolchains": []any{}}) }),
 		"ensureAvailable": f.callback(t, func([]js.Value) any { return readySnapshot() }),
-		"execute":         f.callback(t, func(args []js.Value) any { return backendResult(args, "passed") }),
+		"buildProgram":    f.callback(t, func(args []js.Value) any { return buildResult(args, "") }),
+		"runCase":         f.callback(t, func(args []js.Value) any { return caseResult(args, greeting(args[0].Get("index").Int())) }),
+		"disposeProgram":  f.callback(t, func([]js.Value) any { return nil }),
 	}
 	for name, callback := range overrides {
 		host[name] = callback
@@ -344,9 +462,18 @@ func (f *wasmFixture) bind(t *testing.T, overrides map[string]any) {
 }
 
 func (f *wasmFixture) loadBundle(t *testing.T) {
+	f.loadBundleWithCases(t, "")
+}
+
+func (f *wasmFixture) loadBundleWithCases(t *testing.T, cases string) {
 	t.Helper()
 	output := t.TempDir()
 	problems, templates := testfixture.Catalog(t)
+	if cases != "" {
+		if err := os.WriteFile(filepath.Join(problems, "fundamentals/hello-world/testcases.json"), []byte(cases), 0o600); err != nil {
+			t.Fatal(err)
+		}
+	}
 	if err := bundle.Build(problems, templates, output); err != nil {
 		t.Fatal(err)
 	}
@@ -393,23 +520,33 @@ func readySnapshot() js.Value {
 	}})
 }
 
-func backendResult(args []js.Value, status string) js.Value {
-	request, tests := args[0], args[1]
-	passed, failed, caseStatus := 0, tests.Length(), "wrong_answer"
-	if status == "passed" {
-		passed, failed, caseStatus = tests.Length(), 0, "passed"
+func buildResult(args []js.Value, message string) js.Value {
+	program := args[0]
+	result := map[string]any{"schema_version": 1, "session_id": program.Get("session_id").String()}
+	if program.Get("build_required").Bool() {
+		result["build_duration_ms"] = 7
 	}
-	if status == "timeout" {
-		caseStatus = "timeout"
+	if message != "" {
+		result["error"] = message
 	}
-	if status == "error" {
-		caseStatus = "crashed"
+	return wasm.Value(result)
+}
+
+func caseResult(args []js.Value, jsonOutput string) js.Value {
+	request := args[0]
+	session := request.Get("session_id").String()
+	index := request.Get("index").Int()
+	return wasm.Value(map[string]any{
+		"schema_version": 1, "session_id": session, "index": index, "exit_code": 0, "timed_out": false, "stderr": "",
+		"stdout": fmt.Sprintf("debug log\n%s:%d:1000:json:%s\n", session, index, hex.EncodeToString([]byte(jsonOutput))),
+	})
+}
+
+func greeting(index int) string {
+	if index == 1 {
+		return `"Hello Test"`
 	}
-	rows := make([]any, tests.Length())
-	for i := range rows {
-		rows[i] = map[string]any{"id": tests.Index(i).Get("id").String(), "status": caseStatus, "passed": status == "passed", "hidden": false, "solution_time_ns": 1000}
-	}
-	return wasm.Value(map[string]any{"schema_version": 1, "id": request.Get("id").String(), "language": request.Get("language").String(), "mode": request.Get("mode").String(), "status": status, "total_passed": passed, "total_failed": failed, "duration_ms": 2, "test_results": rows})
+	return `"Hello World"`
 }
 
 func await(t *testing.T, promise js.Value) js.Value {

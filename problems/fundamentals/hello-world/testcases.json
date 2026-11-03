@@ -1,0 +1,20 @@
+[
+  {
+    "id": 1,
+    "description": "Greet standard string name",
+    "input": {
+      "name": "World"
+    },
+    "expected": "Hello World",
+    "hidden": false
+  },
+  {
+    "id": 2,
+    "description": "Greet project name",
+    "input": {
+      "name": "Polyglot"
+    },
+    "expected": "Hello Polyglot",
+    "hidden": true
+  }
+]

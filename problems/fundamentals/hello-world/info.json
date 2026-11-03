@@ -1,0 +1,6 @@
+{
+  "id": "hello-world",
+  "title": "Hello World",
+  "difficulty": "Easy",
+  "description": "Validate language runtime environments, build tooling, and test harness integration by returning a canonical formatted greeting string."
+}

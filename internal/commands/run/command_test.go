@@ -5,13 +5,52 @@ import (
 	"context"
 	"encoding/json"
 	"io"
+	"os/exec"
 	"strings"
 	"testing"
 
 	runapi "polyglot-rosetta/internal/api/run"
 	"polyglot-rosetta/internal/cli"
 	"polyglot-rosetta/internal/domain/evaluation"
+	"polyglot-rosetta/internal/toolchain"
 )
+
+func TestRunCommandReportsFailedBuildTiming(t *testing.T) {
+	if _, err := exec.LookPath("go"); err != nil {
+		t.Skip("Go toolchain is unavailable")
+	}
+	cache := useRunTestCache(t).Toolchain
+	if _, err := toolchain.RefreshCache(cache,
+		func(name string) (string, error) { return "/tools/" + name, nil },
+		func(string, string) (string, error) { return "fixture", nil },
+	); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("PROSETTA_CATALOG", writeCatalog(t))
+	id := mustConceptID(t, "fundamentals/hello-world")
+	for _, format := range []string{"json", "text"} {
+		t.Run(format, func(t *testing.T) {
+			var stdout, stderr bytes.Buffer
+			err := runCommandWithIO(context.Background(), "prosetta run", []string{
+				"--id=" + id, "--lang=go", "--code=invalid Go source", "--format=" + format,
+			}, strings.NewReader(""), &stdout)
+			if err == nil || cli.ExitCode(err, &stderr) != 1 {
+				t.Fatalf("build failure did not fail command: %v", err)
+			}
+			if format == "json" {
+				var result runapi.Result
+				if err := json.Unmarshal(stdout.Bytes(), &result); err != nil {
+					t.Fatal(err)
+				}
+				if result.Status != evaluation.StatusError || result.BuildDurationMs == nil || *result.BuildDurationMs < 0 || result.DurationMs < *result.BuildDurationMs || len(result.TestResults) != 0 || result.Error == "" || stderr.Len() != 0 {
+					t.Fatalf("failed build result = %+v, stderr = %q", result, stderr.String())
+				}
+			} else if !strings.Contains(stdout.String(), "Build Time:") || !strings.Contains(stderr.String(), "build command") {
+				t.Fatalf("build timing or diagnostic lost: stdout=%q stderr=%q", stdout.String(), stderr.String())
+			}
+		})
+	}
+}
 
 func TestCommand(t *testing.T) {
 	command := Command()
