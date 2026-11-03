@@ -5,10 +5,41 @@ package wasm
 import (
 	"encoding/json"
 	"fmt"
+	"math"
 	"syscall/js"
 
 	"polyglot-rosetta/internal/api"
 )
+
+// DecodeHostResult checks the same response fields exposed by help before
+// decoding. JSON alone would silently turn null/NaN into zero-valued fields.
+func DecodeHostResult(value js.Value, target any, contract string) error {
+	if value.Type() != js.TypeObject || value.IsNull() || js.Global().Get("Array").Call("isArray", value).Bool() {
+		return fmt.Errorf("expected a JSON object")
+	}
+	for _, field := range hostContracts[contract] {
+		item := value.Get(field.Name)
+		if item.IsUndefined() && !field.Required {
+			continue
+		}
+		valid := false
+		switch field.Type {
+		case "string":
+			valid = item.Type() == js.TypeString
+		case "boolean":
+			valid = item.Type() == js.TypeBoolean
+		case "integer":
+			if item.Type() == js.TypeNumber {
+				n := item.Float()
+				valid = !math.IsNaN(n) && !math.IsInf(n, 0) && math.Trunc(n) == n
+			}
+		}
+		if !valid {
+			return fmt.Errorf("%s.%s must be %s", contract, field.Name, field.Type)
+		}
+	}
+	return Decode(value, target)
+}
 
 // Decode converts a JavaScript object to a typed Go request.
 func Decode(value js.Value, target any) (err error) {

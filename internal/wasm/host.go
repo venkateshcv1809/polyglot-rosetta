@@ -21,6 +21,7 @@ type invalidOption struct {
 }
 
 type bindResult struct {
+	HostAPIVersion  int             `json:"host_api_version"`
 	SchemaVersion   int             `json:"schema_version"`
 	Status          string          `json:"status"`
 	OK              bool            `json:"ok"`
@@ -37,7 +38,7 @@ func Bind() Binding {
 }
 
 func bind(_ js.Value, args []js.Value) any {
-	result := bindResult{SchemaVersion: api.SchemaVersion, Status: "error"}
+	result := bindResult{HostAPIVersion: HostAPIVersion, SchemaVersion: api.SchemaVersion, Status: "error"}
 	next := make(map[string]js.Value, len(hostOptions))
 	if len(args) != 1 || args[0].Type() != js.TypeObject || args[0].IsNull() || js.Global().Get("Array").Call("isArray", args[0]).Bool() {
 		received := "no arguments"
@@ -96,8 +97,14 @@ func RefreshCache() (js.Value, error) { return hostCallback("refreshCache") }
 // EnsureAvailable returns the callback that makes a language ready using its cached snapshot.
 func EnsureAvailable() (js.Value, error) { return hostCallback("ensureAvailable") }
 
-// Execute returns the bound worker/execution callback.
-func Execute() (js.Value, error) { return hostCallback("execute") }
+// BuildProgram returns the callback that prepares and compiles one session.
+func BuildProgram() (js.Value, error) { return hostCallback("buildProgram") }
+
+// RunCase returns the callback that launches one case and returns raw output.
+func RunCase() (js.Value, error) { return hostCallback("runCase") }
+
+// DisposeProgram returns the callback that releases a session's resources.
+func DisposeProgram() (js.Value, error) { return hostCallback("disposeProgram") }
 
 // ClearCache returns the optional callback that deletes the readiness snapshot.
 func ClearCache() (js.Value, error) { return hostCallback("clearCache") }

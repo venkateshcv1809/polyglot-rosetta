@@ -3,6 +3,7 @@
 package wasm
 
 import (
+	executionapi "polyglot-rosetta/internal/api/execution"
 	"reflect"
 	"strings"
 	"syscall/js"
@@ -18,6 +19,26 @@ func helpForTest(t *testing.T, binding Binding, args ...js.Value) helpResult {
 	return result
 }
 
+func TestExecutionContractDiscoveryMatchesWireTypes(t *testing.T) {
+	for name, value := range map[string]any{
+		"Program": executionapi.Program{}, "BuildResult": executionapi.BuildResult{},
+		"CaseRequest": executionapi.CaseRequest{}, "CaseResult": executionapi.CaseResult{},
+	} {
+		typ := reflect.TypeOf(value)
+		fields := hostContracts[name]
+		if len(fields) != typ.NumField() {
+			t.Fatalf("%s discovery fields do not match Go wire type", name)
+		}
+		for i, field := range fields {
+			jsonTag := strings.Split(typ.Field(i).Tag.Get("json"), ",")
+			optional := len(jsonTag) > 1 && jsonTag[1] == "omitempty"
+			if field.Name != jsonTag[0] || field.Required == optional || field.Description == "" {
+				t.Fatalf("%s field %d discovery is inconsistent: %+v", name, i, field)
+			}
+		}
+	}
+}
+
 func TestHelpBeforeBindingAndSelectedMethod(t *testing.T) {
 	testHost(t)
 	binding := Help([]Binding{Bind(), {Name: "example", Help: MethodHelp{Description: "Example method", Signatures: []string{"example(request)"}, Parameters: []Option{{Name: "request", Type: "object", Required: true, Description: "Required request."}}, Returns: "Example result"}}})
@@ -29,10 +50,10 @@ func TestHelpBeforeBindingAndSelectedMethod(t *testing.T) {
 			t.Fatal("help lists must be arrays")
 		}
 	}
-	if result.SchemaVersion != 1 || result.Status != "ok" || !reflect.DeepEqual(names, []string{"bind", "example", "help"}) {
+	if result.SchemaVersion != 1 || result.HostAPIVersion != 1 || result.Status != "ok" || !reflect.DeepEqual(names, []string{"bind", "example", "help"}) {
 		t.Fatalf("help=%+v", result)
 	}
-	if len(result.HostOptions) != 4 || !result.HostOptions[0].Required || result.HostOptions[3].Required {
+	if len(result.HostOptions) != 6 || !result.HostOptions[0].Required || result.HostOptions[5].Required {
 		t.Fatalf("host options=%+v", result.HostOptions)
 	}
 	selected := helpForTest(t, binding, js.ValueOf("example"))

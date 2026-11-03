@@ -16,7 +16,7 @@ func testHost(t *testing.T) map[string]any {
 	t.Cleanup(func() { boundHost = original })
 	callback := js.FuncOf(func(js.Value, []js.Value) any { return nil })
 	t.Cleanup(callback.Release)
-	return map[string]any{"refreshCache": callback, "ensureAvailable": callback, "execute": callback}
+	return map[string]any{"refreshCache": callback, "ensureAvailable": callback, "buildProgram": callback, "runCase": callback, "disposeProgram": callback}
 }
 
 func bindForTest(t *testing.T, args ...js.Value) bindResult {
@@ -31,20 +31,20 @@ func bindForTest(t *testing.T, args ...js.Value) bindResult {
 func TestBindReportsAllMissingAndInvalidOptions(t *testing.T) {
 	testHost(t)
 	result := bindForTest(t, js.ValueOf(map[string]any{}))
-	if result.OK || result.Status != "error" || !reflect.DeepEqual(result.MissingRequired, []string{"refreshCache", "ensureAvailable", "execute"}) {
+	if result.OK || result.Status != "error" || !reflect.DeepEqual(result.MissingRequired, []string{"refreshCache", "ensureAvailable", "buildProgram", "runCase", "disposeProgram"}) {
 		t.Fatalf("result=%+v", result)
 	}
 	if len(result.Options) != len(hostOptions) || !strings.Contains(result.Error, "help(\"bind\")") {
 		t.Fatalf("missing discovery details: %+v", result)
 	}
 	result = bindForTest(t, js.ValueOf(map[string]any{"refreshCache": "wrong", "clearCache": false}))
-	if len(result.InvalidOptions) != 2 || !reflect.DeepEqual(result.MissingRequired, []string{"ensureAvailable", "execute"}) {
+	if len(result.InvalidOptions) != 2 || !reflect.DeepEqual(result.MissingRequired, []string{"ensureAvailable", "buildProgram", "runCase", "disposeProgram"}) {
 		t.Fatalf("result=%+v", result)
 	}
 	if result.InvalidOptions[0].Received != "string" || result.InvalidOptions[1].Received != "boolean" {
 		t.Fatalf("invalid types: %+v", result.InvalidOptions)
 	}
-	for _, name := range []string{"refreshCache", "ensureAvailable", "execute", "clearCache"} {
+	for _, name := range []string{"refreshCache", "ensureAvailable", "buildProgram", "runCase", "disposeProgram", "clearCache"} {
 		if !strings.Contains(result.Error, name) {
 			t.Fatalf("error omits %s: %s", name, result.Error)
 		}
@@ -102,7 +102,7 @@ func TestBindAndHelpUseTheSameRequiredConfiguration(t *testing.T) {
 	if info.HostOptions[len(info.HostOptions)-1].Name != "extra" || !info.HostOptions[len(info.HostOptions)-1].Required {
 		t.Fatal("help did not use host config")
 	}
-	host["extra"] = host["execute"]
+	host["extra"] = host["buildProgram"]
 	if r := bindForTest(t, js.ValueOf(host)); !r.OK {
 		t.Fatalf("configured function rejected: %+v", r)
 	}
