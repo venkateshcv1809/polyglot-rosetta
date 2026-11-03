@@ -59,6 +59,10 @@ The command exits nonzero on failed evaluation or errors, including with `--form
 
 Native evaluation allows 10 seconds per test case and at least 60 seconds per build command. Captured output retains a bounded tail of each stream (1 MiB by default). These are implementation defaults, not public command-line settings or memory limits. `solution_time_ns` measures the solution call; total duration includes additional work and is not a controlled cross-language benchmark.
 
+Each native run prepares one temporary program, builds it once when required, and launches it separately for each selected testcase. The text result includes **Build Time**, and JSON includes `build_duration_ms`, in milliseconds. This measures compiler wall time for the solution and harness together; it excludes catalog lookup, toolchain probing, harness generation, and testcase execution. Go, Rust, TypeScript, and Zig have a build step. Python reports `not required` in text and omits the JSON build field.
+
+A compilation failure stops the run before any testcase executes, returns a nonzero exit status, and preserves the attempted build time in text and JSON. Failures before the build stage is attempted have no build time. `duration_ms` measures native evaluation from source preparation through cleanup, including compilation and case execution; it excludes earlier command preparation such as catalog lookup and probing. Per-case `solution_time_ns` remains separate and excludes compilation. Build artifacts are removed after evaluation and rebuilt on the next run.
+
 For automation, read JSON from standard output and diagnostics from standard error, and preserve the exit status. Argument parsing failures can occur before a JSON result is produced; handle nonzero exits with empty or non-JSON output. Do not infer success from the presence of valid JSON alone.
 
 ## Catalog selection

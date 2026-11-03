@@ -29,6 +29,7 @@ Generated build output should not be committed. `just clean` removes `bin/`, `di
 ## Checks
 
 ```sh
+just check       # native/WASM builds, catalog packaging, vet, race/coverage, WASM tests
 just test        # Go tests
 just lint        # go vet
 just test-race   # Go tests with the race detector
@@ -38,7 +39,9 @@ just check-go    # go vet, race tests, coverage reports
 
 Race tests require a supported native platform and C toolchain. `just test-cover` writes `coverage.out` and `coverage.html`. `just format` runs Go formatting; `just tidy` tidies and verifies module dependencies.
 
-The WASM suite compiles Go tests for `js/wasm` and executes them through Go's Node wrapper. It exercises exports, promises, catalog activation, host rebinding, and errors with fixture callbacks. It does not execute browser language compilers or separately load the standalone release WASM artifact.
+`just check` runs the combined local build and test checks. CI additionally lints GitHub workflows and enforces the 70% total coverage minimum. The pre-commit hook below retains the narrower `just check-go` gate.
+
+The WASM suite compiles Go tests for `js/wasm` and executes them through Go's Node wrapper. It exercises exports, promises, catalog activation, host rebinding, and errors with fixture callbacks. It does not execute SDK browser language compilers or separately load the standalone release WASM artifact. The native suite additionally cross-compiles generated Go and Zig programs to WASI and executes them under Node to check the shared entry-point contract.
 
 To use the repository's pre-commit gate:
 
