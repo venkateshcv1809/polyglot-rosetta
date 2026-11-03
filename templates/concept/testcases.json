@@ -1,11 +1,202 @@
 [
   {
     "id": 1,
-    "description": "Example testcase",
+    "description": "String: return input.value unchanged",
     "input": {
-      "key": "value"
+      "value": "example"
     },
-    "expected": "Expected output string or object",
+    "expected": "example",
     "hidden": false
+  },
+  {
+    "id": 2,
+    "description": "Integer: return input.value unchanged",
+    "input": {
+      "value": -42
+    },
+    "expected": -42,
+    "hidden": false
+  },
+  {
+    "id": 3,
+    "description": "Decimal number: return input.value unchanged",
+    "input": {
+      "value": 3.5
+    },
+    "expected": 3.5,
+    "hidden": false
+  },
+  {
+    "id": 4,
+    "description": "Boolean true: return input.value unchanged",
+    "input": {
+      "value": true
+    },
+    "expected": true,
+    "hidden": false
+  },
+  {
+    "id": 5,
+    "description": "Boolean false: return input.value unchanged",
+    "input": {
+      "value": false
+    },
+    "expected": false,
+    "hidden": false
+  },
+  {
+    "id": 6,
+    "description": "Null: return input.value unchanged",
+    "input": {
+      "value": null
+    },
+    "expected": null,
+    "hidden": false
+  },
+  {
+    "id": 7,
+    "description": "Array: return input.value unchanged",
+    "input": {
+      "value": [
+        1,
+        2,
+        3
+      ]
+    },
+    "expected": [
+      1,
+      2,
+      3
+    ],
+    "hidden": false
+  },
+  {
+    "id": 8,
+    "description": "Nested arrays (matrix): return input.value unchanged",
+    "input": {
+      "value": [
+        [
+          1,
+          2
+        ],
+        [
+          3,
+          4
+        ]
+      ]
+    },
+    "expected": [
+      [
+        1,
+        2
+      ],
+      [
+        3,
+        4
+      ]
+    ],
+    "hidden": false
+  },
+  {
+    "id": 9,
+    "description": "Nested object: return input.value unchanged",
+    "input": {
+      "value": {
+        "name": "example",
+        "settings": {
+          "enabled": true,
+          "limit": 3
+        },
+        "items": [
+          {
+            "id": 1,
+            "label": "first"
+          }
+        ]
+      }
+    },
+    "expected": {
+      "name": "example",
+      "settings": {
+        "enabled": true,
+        "limit": 3
+      },
+      "items": [
+        {
+          "id": 1,
+          "label": "first"
+        }
+      ]
+    },
+    "hidden": false
+  },
+  {
+    "id": 10,
+    "description": "Mixed array: return input.value unchanged",
+    "input": {
+      "value": [
+        1,
+        "example",
+        false,
+        null,
+        {
+          "key": "value"
+        },
+        [
+          2,
+          3
+        ]
+      ]
+    },
+    "expected": [
+      1,
+      "example",
+      false,
+      null,
+      {
+        "key": "value"
+      },
+      [
+        2,
+        3
+      ]
+    ],
+    "hidden": false
+  },
+  {
+    "id": 11,
+    "description": "Empty string: return input.value unchanged",
+    "input": {
+      "value": ""
+    },
+    "expected": "",
+    "hidden": false
+  },
+  {
+    "id": 12,
+    "description": "Empty array: return input.value unchanged",
+    "input": {
+      "value": []
+    },
+    "expected": [],
+    "hidden": false
+  },
+  {
+    "id": 13,
+    "description": "Empty object: return input.value unchanged",
+    "input": {
+      "value": {}
+    },
+    "expected": {},
+    "hidden": false
+  },
+  {
+    "id": 14,
+    "description": "Unicode, newline, quotes, and backslash: return input.value unchanged",
+    "input": {
+      "value": "Hello 世界 😀\n\"quoted\" \\path"
+    },
+    "expected": "Hello 世界 😀\n\"quoted\" \\path",
+    "hidden": true
   }
 ]

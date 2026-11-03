@@ -1,6 +1,6 @@
 export class Solution {
   solve(inputData: unknown): unknown {
-    // TODO: Implement solution
+    // Read (inputData as { value: unknown }).value and return a JSON-compatible value.
     return null;
   }
 }
