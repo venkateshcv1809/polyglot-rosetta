@@ -59,6 +59,11 @@ func Run(ctx context.Context, request runapi.Request, host Host) (runapi.Result,
 	}
 	evaluated, err := host.Execute(ctx, request, tests)
 	if err != nil {
+		// A failed build has no case results, but its measured timings are
+		// useful. Accept them only for a valid response to this request.
+		if validateResultIdentity(evaluated, request) == nil {
+			result.DurationMs, result.BuildDurationMs = evaluated.DurationMs, evaluated.BuildDurationMs
+		}
 		return fail(err)
 	}
 	if err := validateResult(evaluated, request, tests); err != nil {
@@ -73,14 +78,8 @@ func Run(ctx context.Context, request runapi.Request, host Host) (runapi.Result,
 
 func validateResult(result runapi.Result, request runapi.Request, tests []testcase.TestCase) error {
 	invalid := func(reason string) error { return fmt.Errorf("invalid execution result: %s", reason) }
-	if result.SchemaVersion != api.SchemaVersion {
-		return invalid(fmt.Sprintf("schema_version must be %d", api.SchemaVersion))
-	}
-	if result.ID != request.ID || result.Language != request.Language || result.Mode != request.Mode {
-		return invalid("request identity does not match")
-	}
-	if result.DurationMs < 0 || (result.BuildDurationMs != nil && *result.BuildDurationMs < 0) {
-		return invalid("durations cannot be negative")
+	if err := validateResultIdentity(result, request); err != nil {
+		return err
 	}
 	if len(result.TestResults) != len(tests) {
 		return invalid("selected test cases do not match")
@@ -128,6 +127,20 @@ func validateResult(result runapi.Result, request runapi.Request, tests []testca
 		}
 	default:
 		return invalid("unknown overall status")
+	}
+	return nil
+}
+
+func validateResultIdentity(result runapi.Result, request runapi.Request) error {
+	invalid := func(reason string) error { return fmt.Errorf("invalid execution result: %s", reason) }
+	if result.SchemaVersion != api.SchemaVersion {
+		return invalid(fmt.Sprintf("schema_version must be %d", api.SchemaVersion))
+	}
+	if result.ID != request.ID || result.Language != request.Language || result.Mode != request.Mode {
+		return invalid("request identity does not match")
+	}
+	if result.DurationMs < 0 || (result.BuildDurationMs != nil && *result.BuildDurationMs < 0) {
+		return invalid("durations cannot be negative")
 	}
 	return nil
 }

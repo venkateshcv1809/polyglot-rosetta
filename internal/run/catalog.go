@@ -1,4 +1,5 @@
-// Package run coordinates native catalog lookup and solution evaluation.
+// Package run supplies native catalog content and toolchain readiness to the
+// shared run command. Evaluation is owned by internal/execution.
 package run
 
 import (
