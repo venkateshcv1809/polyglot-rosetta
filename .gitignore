@@ -2,6 +2,15 @@
 .index.json
 /tmp/
 
+# Keep generated Pages output out of Git; allow only the authored site inputs.
+.github/pages/*
+!.github/pages/_config.yml
+!.github/pages/index.md
+!.github/pages/catalog/
+.github/pages/catalog/*
+!.github/pages/catalog/index.md
+!.github/pages/_data/
+
 # OS & Editor Files
 .DS_Store
 Thumbs.db
