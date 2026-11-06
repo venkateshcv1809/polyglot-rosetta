@@ -1,5 +1,23 @@
+# Metadata
 title: Polyglot Rosetta
 description: A cross-language coding catalog, CLI, and WebAssembly core.
-theme: jekyll-theme-minimal
 url: https://venkateshcv1809.github.io
 baseurl: /polyglot-rosetta
+
+# Plugin configuration
+plugins:
+    - jekyll-feed
+    - jekyll-seo-tag
+    - jekyll-sitemap
+
+# Markdown renderer
+markdown: kramdown
+kramdown:
+    input: GFM
+
+sass:
+    style: compressed
+
+exclude:
+    - site
+    - _site
