@@ -166,7 +166,7 @@ format:
     go fmt ./...
 
 # Live-reload GitHub Pages preview. Pass the portfolio checkout, or set PORTFOLIO_ROOT.
-# Example: just site-dev ../venkateshcv1809.github.io
+# Example: just site-dev ../portfolio-checkout
 site-dev source="":
     just release-catalog
     go run ./cmd/site dev --source="{{source}}"

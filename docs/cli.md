@@ -65,6 +65,18 @@ A compilation failure stops the run before any testcase executes, returns a nonz
 
 For automation, read JSON from standard output and diagnostics from standard error, and preserve the exit status. Argument parsing failures can occur before a JSON result is produced; handle nonzero exits with empty or non-JSON output. Do not infer success from the presence of valid JSON alone.
 
+## Site helper
+
+The separate `site` maintainer binary stages the shared portfolio theme and catalog into `.github/pages`:
+
+```sh
+just build-site
+./bin/site stage --source=../portfolio-checkout
+./bin/site dev --source=../portfolio-checkout
+```
+
+`stage` prepares files for publishing. `dev` starts Jekyll with live reload and requires Ruby, Bundler, and the Jekyll gems from the portfolio checkout. Run `bundle install` there first. `--source` accepts a local portfolio checkout path; when omitted, `PORTFOLIO_ROOT` or the cached shallow clone is used. Both commands use `dist/problems` as the catalog bundle by default.
+
 ## Catalog selection
 
 For `run`, selection proceeds through:
