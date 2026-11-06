@@ -26,10 +26,12 @@ func TestExecute_PublicSurface(t *testing.T) {
 	if err := execute(nil); err == nil {
 		t.Fatal("expected missing command")
 	}
-	if err := execute([]string{"generate"}); err == nil {
-		t.Fatal("expected unknown command for generate")
-	} else if !strings.Contains(err.Error(), "unknown command") {
-		t.Fatalf("error = %v", err)
+	for _, name := range []string{"generate", "site"} {
+		if err := execute([]string{name}); err == nil {
+			t.Fatalf("expected unknown command for %s", name)
+		} else if !strings.Contains(err.Error(), "unknown command") {
+			t.Fatalf("%s error = %v", name, err)
+		}
 	}
 	if err := execute([]string{"--help"}); err != nil {
 		t.Fatalf("help: %v", err)
