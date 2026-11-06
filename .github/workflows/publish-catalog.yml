@@ -9,6 +9,7 @@ on:
       - 'problems/**'
       - 'templates/**'
       - 'cmd/generate/**'
+      - 'cmd/site/**'
       - 'internal/**'
       - 'go.mod'
       - 'go.sum'
@@ -54,6 +55,14 @@ jobs:
         with:
           persist-credentials: false
 
+      - name: Checkout Portfolio Theme
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          repository: venkateshcv1809/venkateshcv1809.github.io
+          ref: main
+          path: portfolio-theme
+          persist-credentials: false
+
       - name: Install Catalog Toolchains
         uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4
         with:
@@ -61,17 +70,24 @@ jobs:
           install_args: --locked go just
           cache: false
 
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '4.0.5'
+          bundler-cache: true
+          working-directory: portfolio-theme
+
       - name: Build Catalog
         run: |
           just release-catalog
-          mkdir -p .github/pages/catalog
-          cp dist/problems/* .github/pages/catalog/
+          go build -o bin/site ./cmd/site
+          ./bin/site stage --source=portfolio-theme
 
       - name: Build Catalog Pages
-        uses: actions/jekyll-build-pages@44a6e6beabd48582f863aeeb6cb2151cc1716697 # v1
-        with:
-          source: .github/pages
-          destination: _site
+        working-directory: portfolio-theme
+        env:
+          JEKYLL_ENV: production
+        run: bundle exec jekyll build --source "$GITHUB_WORKSPACE/.github/pages" --destination "$GITHUB_WORKSPACE/_site"
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa # v3
