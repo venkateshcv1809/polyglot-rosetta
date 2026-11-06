@@ -1,41 +1,38 @@
 ---
-layout: default
+layout: release
 title: Polyglot Rosetta
+description: Compare coding exercises in Go, Python, Rust, TypeScript, and Zig.
 ---
 
-# Polyglot Rosetta
+# Learn a concept. Compare five implementations.
 
-**Learn a concept once. Implement it across five languages.**
+Polyglot Rosetta combines exercises, explanations, reference solutions, and evaluation in one workflow. Work through a problem in **Go, Python, Rust, TypeScript, or Zig**, then compare how each language expresses the same idea.
 
-Polyglot Rosetta combines programming exercises, reference implementations, and local evaluation for Go, Python, Rust, TypeScript, and Zig. Use the `prosetta` CLI for practice and editor workflows, or integrate the shared WebAssembly core with your own browser runtimes.
+## Explore the project
 
-The project is in the `v0.x` stage. The initial Hello World exercise demonstrates the full five-language workflow. Native execution is intended for trusted code and does not sandbox submissions.
+- [**Problem catalog**]({{ '/catalog/' | relative_url }}) - Browse exercises, explanations, reference solutions, and test cases.
+- [**Releases**](https://github.com/venkateshcv1809/polyglot-rosetta/releases) - Download the CLI and WebAssembly core.
+- [**Source code**](https://github.com/venkateshcv1809/polyglot-rosetta) - Explore the engine, catalog tools, and exercise content.
 
-## Start here
+## Each exercise has a full learning loop
 
-- [Project overview and quick start](https://github.com/venkateshcv1809/polyglot-rosetta#readme)
-- [Getting started](https://github.com/venkateshcv1809/polyglot-rosetta/blob/main/docs/getting-started.md)
-- [CLI reference](https://github.com/venkateshcv1809/polyglot-rosetta/blob/main/docs/cli.md)
-- [Browser host integration](https://github.com/venkateshcv1809/polyglot-rosetta/blob/main/docs/browser-integration.md)
+Start with a problem statement and its constraints. Read an explanation with examples and complexity analysis, then study or write an implementation. Public cases give quick feedback; hidden cases check the broader solution.
 
-Source and release links require repository access while the project is private.
+## Use the engine in your workflow
 
-## Catalog
+- **Practice locally:** the `prosetta` CLI builds and evaluates solutions with your installed language toolchains.
+- **Build an integration:** the shared Go core can run as WebAssembly, with its host providing compilation and execution capabilities.
+- **Author or distribute exercises:** keep problem content in a catalog that can be packaged and updated independently of engine releases.
 
-This is the moving catalog channel, published independently of engine releases. Clients start with `manifest.json` and fetch the assets it names. The manifest records asset sizes, SHA-256 digests, and the minimum compatible engine. Browser hosts verify these before activation; the native `catalog` command handles synchronization.
+## Get started
 
-<ul>
-{% for file in site.static_files %}
-{% if file.path contains '/catalog/' %}
-  <li><a href="{{ file.path | relative_url | escape }}">{{ file.name | escape }}</a></li>
-{% endif %}
-{% endfor %}
-</ul>
+Install the Go version listed in `go.mod` and [just](https://just.systems/), then build the CLI and run the sample exercise:
 
-## Downloads and source
+```sh
+just build-cli
+./bin/prosetta run --id=c-2b23ca0786e0eb237f64cf2b8759bcc3 --lang=go
+```
 
-- [Releases](https://github.com/venkateshcv1809/polyglot-rosetta/releases): CLI binaries for Linux, macOS, and Windows on amd64 and arm64, plus the WebAssembly core and JavaScript runtime bridge.
-- [Source code](https://github.com/venkateshcv1809/polyglot-rosetta)
-- [Support](https://github.com/venkateshcv1809/polyglot-rosetta/blob/main/SUPPORT.md)
-- [Security policy](https://github.com/venkateshcv1809/polyglot-rosetta/blob/main/SECURITY.md)
-- [MIT License](https://github.com/venkateshcv1809/polyglot-rosetta/blob/main/LICENSE)
+See the [getting started guide](https://github.com/venkateshcv1809/polyglot-rosetta/blob/main/docs/getting-started.md) for setup and the complete workflow. The [CLI reference](https://github.com/venkateshcv1809/polyglot-rosetta/blob/main/docs/cli.md) covers commands and options.
+
+Native evaluation runs with your account's permissions. Use it for trusted practice code; see the [security policy](https://github.com/venkateshcv1809/polyglot-rosetta/blob/main/SECURITY.md) before building a service around it.
