@@ -36,10 +36,15 @@ To use the standalone maintainer binary:
 
 ```sh
 just build-internal
+just build-site
 ./bin/generate --help
 ./bin/generate list
 ./bin/generate list --search=greeting
+./bin/site stage --source=../portfolio-checkout
+./bin/site dev --source=../portfolio-checkout
 ```
+
+Both site commands stage the portfolio theme and catalog into `.github/pages`. `stage` prepares the files; `dev` serves them with Jekyll and requires Ruby, Bundler, and the portfolio checkout's gems. Install those gems with `bundle install` from the portfolio checkout. If `--source` is omitted, `PORTFOLIO_ROOT` or the cached shallow portfolio clone is used.
 
 ## Solution interfaces
 

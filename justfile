@@ -21,8 +21,8 @@ RELEASE_TARGETS := "linux/amd64 linux/arm64 darwin/amd64 darwin/arm64 windows/am
 # Build the unified public CLI and WASM assets
 build: build-cli build-wasm
 
-# Build everything (public CLI, WASM, and maintainer tool)
-build-local: build build-internal
+# Build everything (public CLI, WASM, maintainer, and site tools)
+build-local: build build-internal build-site
 
 # Build the public-facing CLI binary
 build-cli:
@@ -37,6 +37,13 @@ build-internal:
 	@mkdir -p {{BIN_DIR}}
 	go build -o {{BIN_DIR}}/generate ./cmd/generate
 	@echo "Maintainer CLI binary ready in {{BIN_DIR}}/generate"
+
+# Build the small GitHub Pages theme helper
+build-site:
+	@echo "Building site theme helper..."
+	@mkdir -p {{BIN_DIR}}
+	go build -o {{BIN_DIR}}/site ./cmd/site
+	@echo "Site theme helper ready in {{BIN_DIR}}/site"
 
 # Package the metadata index, common templates, and each root category
 build-bundle:
@@ -157,6 +164,12 @@ tidy:
 format:
     @echo "Formatting code..."
     go fmt ./...
+
+# Live-reload GitHub Pages preview. Pass the portfolio checkout, or set PORTFOLIO_ROOT.
+# Example: just site-dev ../portfolio-checkout
+site-dev source="":
+    just release-catalog
+    go run ./cmd/site dev --source="{{source}}"
 
 # ------------------------------------------------------------------------------
 # Cleanup

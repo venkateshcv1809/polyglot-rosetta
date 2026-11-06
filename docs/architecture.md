@@ -84,6 +84,7 @@ JSON requests and results are defined in [`internal/api`](../internal/api/). Cli
 
 - [`cmd/prosetta`](../cmd/prosetta/): public native entry point.
 - [`cmd/generate`](../cmd/generate/): maintainer entry point for scaffolding, discovery, and packaging.
+- [`cmd/site`](../cmd/site/): small helper that stages the shared GitHub Pages theme (`stage`) and serves a live-reload preview (`dev`).
 - [`cmd/wasm`](../cmd/wasm/): browser exports registered on `ProsettaCore`.
 - [`internal/commands`](../internal/commands/): command services and native/WASM adapters.
 - [`internal/api`](../internal/api/): transport-neutral request and result types.

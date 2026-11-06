@@ -15,16 +15,25 @@ just help
 just build-local
 ```
 
-`just build-cli` writes `bin/prosetta`; `just build-internal` writes `bin/generate`; `just build-wasm` writes `dist/prosetta.wasm` and `dist/wasm_exec.js`. `just build` builds the public CLI and WASM assets, and `just build-local` also builds the maintainer binary. Catalog packaging is separate: `just build-bundle` writes `dist/problems/`.
+`just build-cli` writes `bin/prosetta`; `just build-internal` writes `bin/generate`; `just build-site` writes `bin/site`; `just build-wasm` writes `dist/prosetta.wasm` and `dist/wasm_exec.js`. `just build` builds the public CLI and WASM assets, and `just build-local` also builds the maintainer and site binaries. Catalog packaging is separate: `just build-bundle` writes `dist/problems/`.
 
 Without `just`, the native build commands are:
 
 ```sh
 go build -o bin/prosetta ./cmd/prosetta
 go build -o bin/generate ./cmd/generate
+go build -o bin/site ./cmd/site
 ```
 
 Generated build output should not be committed. `just clean` removes `bin/`, `dist/`, and coverage reports.
+
+GitHub Pages preview uses the `site` helper and the portfolio theme. Jekyll and its Gemfile stay in the portfolio checkout; this repository does not vendor Ruby gems. Pass the local portfolio checkout; do not hardcode its path:
+
+```sh
+just site-dev ../portfolio-checkout
+```
+
+That recipe packages the catalog, then runs `site dev`. Catalog publishing builds `bin/site` and runs `site stage`. `PORTFOLIO_ROOT` is accepted when `--source` is omitted. If neither is set, the helper reuses a shallow portfolio clone under the system temporary directory, cloning it there the first time. Remove that cached checkout from the temp directory to force a fresh clone.
 
 ## Checks
 

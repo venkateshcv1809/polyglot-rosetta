@@ -12,6 +12,13 @@ const (
 	CatalogURL             = "https://venkateshcv1809.github.io/polyglot-rosetta/catalog/"
 )
 
+// Site preview temporary paths and portfolio checkout defaults.
+const (
+	PortfolioRepositoryURL = "https://github.com/venkateshcv1809/venkateshcv1809.github.io.git"
+	PortfolioCloneDir      = "prosetta-theme"
+	SitePreviewDirName     = "prosetta-site"
+)
+
 // Catalog filenames are part of the bundle format, shared by its producer and consumers.
 const (
 	CatalogDirName        = "problems"

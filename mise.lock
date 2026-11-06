@@ -143,6 +143,52 @@ url = "https://github.com/astral-sh/python-build-standalone/releases/download/20
 checksum = "sha256:1e5655a6ccb1a64a78460e4e3ee21036c70246800f176a6c91043a3fe3654a3b"
 url = "https://github.com/astral-sh/python-build-standalone/releases/download/20240224/cpython-3.12.2+20240224-x86_64-pc-windows-msvc-shared-install_only.tar.gz"
 
+[[tools.ruby]]
+version = "4.0.5"
+backend = "core:ruby"
+specifiers = ["4.0.5"]
+
+[tools.ruby.options]
+compile = "false"
+precompiled_url = "jdx/ruby"
+ruby_build_repo = "https://github.com/rbenv/ruby-build.git"
+ruby_install = "false"
+
+[tools.ruby."platforms.linux-arm64"]
+checksum = "sha256:28f8c6d0d65741bb8ad49af4a0ec46acdaabd808524e4e2f1f1f6b4d34b4c69c"
+url = "https://github.com/jdx/ruby/releases/download/4.0.5-4/ruby-4.0.5.arm64_linux.tar.gz"
+provenance = "github-attestations"
+
+[tools.ruby."platforms.linux-arm64-musl"]
+checksum = "sha256:7d6149079a63f8ae1d326c9fa65c6019ba2dc3155eae7b39159817911c88958e"
+url = "https://cache.ruby-lang.org/pub/ruby/4.0/ruby-4.0.5.tar.gz"
+
+[tools.ruby."platforms.linux-x64"]
+checksum = "sha256:c12613a5bfc1ac6695dd519120e71556a64421d650a84521e29cae08d92e4e40"
+url = "https://github.com/jdx/ruby/releases/download/4.0.5-4/ruby-4.0.5.x86_64_linux.tar.gz"
+provenance = "github-attestations"
+
+[tools.ruby."platforms.linux-x64-musl"]
+checksum = "sha256:7d6149079a63f8ae1d326c9fa65c6019ba2dc3155eae7b39159817911c88958e"
+url = "https://cache.ruby-lang.org/pub/ruby/4.0/ruby-4.0.5.tar.gz"
+
+[tools.ruby."platforms.macos-arm64"]
+checksum = "sha256:9b6d186af22727be3f9c1eb29af14da2f7c1eb5de91deaae766772069bffedd4"
+url = "https://github.com/jdx/ruby/releases/download/4.0.5-4/ruby-4.0.5.macos.tar.gz"
+provenance = "github-attestations"
+
+[tools.ruby."platforms.macos-x64"]
+checksum = "sha256:7d6149079a63f8ae1d326c9fa65c6019ba2dc3155eae7b39159817911c88958e"
+url = "https://cache.ruby-lang.org/pub/ruby/4.0/ruby-4.0.5.tar.gz"
+
+[[tools.ruby]]
+version = "4.0.5"
+backend = "core:ruby"
+
+[tools.ruby."platforms.windows-x64"]
+checksum = "sha256:74e31613fc71e6e23431dfc4d8b6ec2818a4dc1fd16e0983b074144c16719c8b"
+url = "https://github.com/oneclick/rubyinstaller2/releases/download/RubyInstaller-4.0.5-1/rubyinstaller-4.0.5-1-x64.7z"
+
 [[tools.rust]]
 version = "1.97.1"
 backend = "core:rust"

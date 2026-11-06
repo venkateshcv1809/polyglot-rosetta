@@ -1,4 +1,4 @@
-# Hello World — Solution guide
+# Hello World - Solution guide
 
 [Problem statement](PROBLEM.md)
 
