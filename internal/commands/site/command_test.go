@@ -62,8 +62,11 @@ func TestRunStage_CopiesThemeAndCatalog(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, rel := range []string{
+		"404.html",
+		"_layouts/default.html",
 		"_layouts/release.html",
 		"catalog/manifest.json",
+		"assets/emoji/construction.webp",
 		"assets/fonts/MesloLGSNerdFont-Regular.ttf",
 	} {
 		if !regularFile(filepath.Join(dest, rel)) {
@@ -201,9 +204,12 @@ func TestRunDev_ServesAfterStaging(t *testing.T) {
 func writeThemeFixture(t *testing.T, root string) string {
 	t.Helper()
 	files := []string{
+		"404.html",
+		"_layouts/default.html",
 		"_layouts/release.html",
 		"_includes/breadcrumb.html",
 		"_includes/head.html",
+		"_includes/header.html",
 		"_includes/footer.html",
 		"_plugins/icon.rb",
 		"_sass/_release.scss",
@@ -212,6 +218,7 @@ func writeThemeFixture(t *testing.T, root string) string {
 		"assets/fonts/MesloLGSNerdFont-Regular.ttf",
 		"assets/fonts/MesloLGSNerdFont-Bold.ttf",
 		"assets/favicon/favicon.ico",
+		"assets/emoji/construction.webp",
 		"assets/icons/github.svg",
 	}
 	for _, rel := range files {

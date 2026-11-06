@@ -1,4 +1,4 @@
-# {{TITLE}} — Solution guide
+# {{TITLE}} - Solution guide
 
 ## Overview
 
