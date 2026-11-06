@@ -9,9 +9,12 @@ import (
 )
 
 var themePaths = []string{
+	"404.html",
+	"_layouts/default.html",
 	"_layouts/release.html",
 	"_includes/breadcrumb.html",
 	"_includes/head.html",
+	"_includes/header.html",
 	"_includes/footer.html",
 	"_plugins",
 	"_sass",
@@ -19,6 +22,7 @@ var themePaths = []string{
 	"assets/css/dark.scss",
 	"assets/fonts",
 	"assets/favicon",
+	"assets/emoji",
 	"assets/icons",
 }
 
