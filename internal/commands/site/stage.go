@@ -6,6 +6,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"polyglot-rosetta/internal/config"
 )
 
 var themePaths = []string{
@@ -57,8 +59,8 @@ func stageCatalog(bundleDir, destRoot string) error {
 		return fmt.Errorf("catalog bundle %s is empty; run just release-catalog", bundleDir)
 	}
 	dest := filepath.Join(destRoot, "catalog")
-	if err := os.RemoveAll(dest); err != nil {
-		return fmt.Errorf("remove old staged catalog %s: %w", dest, err)
+	if err := clearStagedCatalogArchives(dest); err != nil {
+		return err
 	}
 	if err := os.MkdirAll(dest, 0o755); err != nil {
 		return err
@@ -69,6 +71,25 @@ func stageCatalog(bundleDir, destRoot string) error {
 		}
 		if err := copyPath(filepath.Join(bundleDir, entry.Name()), filepath.Join(dest, entry.Name())); err != nil {
 			return err
+		}
+	}
+	return nil
+}
+
+func clearStagedCatalogArchives(catalogDir string) error {
+	entries, err := os.ReadDir(catalogDir)
+	if os.IsNotExist(err) {
+		return nil
+	}
+	if err != nil {
+		return fmt.Errorf("read staged catalog %s: %w", catalogDir, err)
+	}
+	for _, entry := range entries {
+		if entry.IsDir() || !strings.HasSuffix(entry.Name(), config.CategoryArchiveSuffix) {
+			continue
+		}
+		if err := os.Remove(filepath.Join(catalogDir, entry.Name())); err != nil {
+			return fmt.Errorf("remove old staged catalog archive %s: %w", entry.Name(), err)
 		}
 	}
 	return nil
